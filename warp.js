@@ -4,6 +4,17 @@ var
     uuid = require('node-uuid'),
     mysql = require('mysql');
 
+function log(conn, name, message) {
+    console.log((conn ? ('[Warp@' + conn.objectId + '] ') : '') + name + ': ' + message);
+}
+
+function executeSQL(conn, sql, params, callback) {
+    var query = conn.query(sql, params, function(err, result) {
+        return callback(err, result);
+    });
+    log(conn, 'SQL', query.sql);
+}
+
 function Warp(pool) {
     this.objectId = uuid.v4();
     this.pool = pool;
