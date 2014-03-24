@@ -1,3 +1,5 @@
+var async = require('async');
+
 var Warp = require('./warp');
 
 var warp = Warp.create({
@@ -10,18 +12,50 @@ var warp = Warp.create({
 console.log(warp);
 
 warp.query('select 1 + 2 as num', function(err, result) {
-    console.log(result);
+    console.log('>>> query result: ' + JSON.stringify(result));
 });
 
 setTimeout(function() {
     warp.destroy();
-}, 1000);
+}, 5000);
+
+warp.update('insert into t_text(id, ref_id, value) values(?,?,?)', ['123', 'ref-123', 'blabla...'], function(err, result) {
+    if (err) {
+        return console.log('>>> insert failed: ' + err.message);
+    }
+    console.log('>>> insert result: ' + result);
+});
+
+warp.query('select * from t_text', function(err, result) {
+    console.log('>>> query result: ' + JSON.stringify(result));
+});
 
 setTimeout(function() {
-    console.log('END');
+    warp.transaction(function(err, tx) {
+        if (err) {
+            return console.log('failed.');
+        }
+        async.series([
+            function(callback) {
+                warp.update('insert into t_text(id, ref_id, value) values(?,?,?)', ['xx--xaa1', 'ref-111123', 'blabla..d.'], tx, function(err, result) {
+                    console.log(err ? err : JSON.stringify(result));
+                    callback(err, result);
+                });
+            },
+            function(callback) {
+                warp.update('insert into t_text(id, ref_id, value) values(?,?,?)', ['xxx--b2', 'ref-211123', 'blabla..ddd.'], tx, callback);
+            }
+        ], function(err, result) {
+            tx.done(err, function(err) {
+                console.log(err ? 'tx failed': 'tx ok!');
+            });
+        });
+    })
 }, 2000);
 
-
+warp.update('update t_text set value=? where id=?', ['xxsssee', '123'], function(err, result) {
+    console.log(err ? 'update failed': 'update ok: ' + JSON.stringify(result));
+})
 
 /**
 

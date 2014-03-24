@@ -4,26 +4,16 @@ var
     uuid = require('node-uuid'),
     mysql = require('mysql');
 
-function log(s) {
-    console.log(s);
-}
-
-function executeQuery(conn, sql, params, callback) {
-    var query = conn.query(sql, params, function(err, result) {
-        return callback(err, result);
-    });
-    log('[Warp: ' + conn.objectId + '] QUERY: ' + query.sql);
-}
-
 function Warp(pool) {
     this.objectId = uuid.v4();
     this.pool = pool;
-    log('Warp object (' + this.objectId + ') created.');
+    console.log('[Pool@' + this.objectId + '] Connection pool created.');
 }
 
 Warp.prototype.className = 'Warp';
+
 Warp.prototype.destroy = function() {
-    log('Warp object (' + this.objectId + ') destroyed.');
+    console.log('[Pool@' + this.objectId + '] Connection pool destroyed.');
     this.pool && this.pool.end();
     delete this.pool;
 };
@@ -40,12 +30,10 @@ Warp.prototype.define = function(name, fields, options) {
         }
         async.waterfall([
             function(callback) {
-                setTimeout(function() {
-                    callback(null, true);
-                }, 3000);
+                warp.query('select * from user', tx, callback);
             }
         ], function(err, result) {
-            tx.end(err, function(err) {
+            tx.done(err, function(err) {
                 return err ? 'TX ROLLBACKED' : 'TX COMMITTED';
             });
         });
@@ -55,46 +43,104 @@ Warp.prototype.define = function(name, fields, options) {
 Warp.prototype.transaction = function(callback) {
     this.pool.getConnection(function(err, conn) {
         if (err) {
+            log(null, 'CONNECTION', 'failed get connection when start transaction.');
             return callback(err);
         }
         conn.objectId = uuid.v4();
+        log(conn, 'TRANSACTION', 'start transaction...');
         conn.beginTransaction(function(err) {
             if (err) {
+                log(conn, 'TRANSACTION', 'failed start transaction.');
                 return callback(err);
             }
-            log(conn, 'TRANSACTION', 'begin transaction');
-            callback(null, conn);
+            log(conn, 'TRANSACTION', 'transaction began.');
+            callback(null, {
+                connection: conn,
+                done: function(err, fn) {
+                    if (err) {
+                        log(conn, 'TRANSACTION', 'rollback transaction...');
+                        return conn.rollback(function() {
+                            log(conn, 'TRANSACTION', 'transaction rollbacked.');
+                            return fn(err);
+                        });
+                    }
+                    log(conn, 'TRANSACTION', 'commit transaction...');
+                    conn.commit(function(err) {
+                        if (err) {
+                            log(conn, 'TRANSACTION', 'commit failed: ' + err.message);
+                            log(conn, 'TRANSACTION', 'rollback transaction...');
+                            return conn.rollback(function() {
+                                log(conn, 'TRANSACTION', 'transaction rollbacked.');
+                                fn(err);
+                            });
+                        }
+                        log(conn, 'TRANSACTION', 'transaction committed.');
+                        fn(null);
+                    });
+                }
+            });
         })
     });
-}
+};
+
+Warp.prototype.update = function(sql, params, tx, callback) {
+    if (arguments.length===3) {
+        callback = tx;
+        tx = null;
+        params = params || [];
+    }
+    else if (arguments.length===2) {
+        callback = params;
+        tx = null;
+        params = [];
+    }
+    if (tx) {
+        // run in transaction:
+        return executeSQL(tx.connection, sql, params, callback);
+    }
+    this.pool.getConnection(function(err, conn) {
+        if (err) {
+            log('?', 'CONNECTION', 'get connection failed.');
+            return callback(err);
+        }
+        conn.objectId = uuid.v4();
+        log(conn, 'CONNECTION', 'opened from pool.');
+        executeSQL(conn, sql, params, function(err, result) {
+            conn.release();
+            log(conn, 'CONNECTION', 'released to pool.');
+            callback(err, result);
+        });
+    });
+};
 
 Warp.prototype.query = function(sql, params, tx, callback) {
     if (arguments.length===3) {
         callback = tx;
         tx = null;
+        params = params || [];
     }
     else if (arguments.length===2) {
         callback = params;
-        params = [];
         tx = null;
+        params = [];
     }
     if (tx) {
         // run in transaction:
+        return executeSQL(tx.connection, sql, params, callback);
     }
-    else {
-        this.pool.getConnection(function(err, conn) {
-            if (err) {
-                return callback(err);
-            }
-            conn.objectId = uuid.v4();
-            log('[Warp: ' + conn.objectId + '] CONNECTION: opened from pool.');
-            executeQuery(conn, sql, params, function(err, result) {
-                conn.release();
-                log('[Warp: ' + conn.objectId + '] CONNECTION: released to pool.');
-                callback(err, result);
-            });
+    this.pool.getConnection(function(err, conn) {
+        if (err) {
+            log('?', 'CONNECTION', 'get connection failed.');
+            return callback(err);
+        }
+        conn.objectId = uuid.v4();
+        log(conn, 'CONNECTION', 'opened from pool.');
+        executeSQL(conn, sql, params, function(err, result) {
+            conn.release();
+            log(conn, 'CONNECTION', 'released to pool.');
+            callback(err, result);
         });
-    }
+    });
 };
 
 var theWarp = {
