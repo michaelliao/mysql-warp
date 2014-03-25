@@ -1,4 +1,8 @@
-var async = require('async');
+var
+    _ = require('lodash'),
+    async = require('async');
+
+var validator = require('validator');
 
 var Warp = require('./warp');
 
@@ -9,25 +13,118 @@ var warp = Warp.create({
     database: 'itranswarp'
 });
 
-console.log(warp);
+console.log('>>> ' + warp);
+
+var User = warp.define('User', [
+    {
+        name: 'id',
+        type: 'varchar(50)',
+        primaryKey: true,
+        allowNull: false
+    },
+    {
+        name: 'email',
+        unique: true,
+        allowNull: false
+    },
+    {
+        name: 'password',
+        column: 'pwd',
+        allowNull: false
+    }
+], {
+    table: 'users'
+});
+
+var Page = warp.define('Page', [], {});
+
+console.log('--> ' + User);
+console.log('--> ' + Page);
+
+User.find();
+
+function hello() {
+    console.log('*** ' + this.name);
+}
+
+var d = {
+    name: 'Dog',
+    hello: hello
+};
+
+var c = {
+    name: 'Cat',
+    hello: hello
+}
+
+d.hello();
+c.hello();
+
+
+
+var f = {
+        name: 'id',
+        column: 'id',
+        type: 'varchar(50)',
+        primaryKey: true,
+        'allowNull': false,
+        'validate': 'ok',
+    };
+
+_.each(f, function(v, k) {
+    console.log(k + ' ==> ' + v);
+});
+
+var validTypes = {
+    'int':       'number',
+    'integer':   'number',
+    'bigint':    'number',
+    'float':     'number',
+    'double':    'number',
+    'real':      'number',
+    'bool':      'boolean',
+    'boolean':   'boolean',
+    'date':      'date',
+    'time':      'time',
+    'datetime':  'datetime',
+    'timestamp': 'number',
+    'varchar':   'string',
+    'char':      'string'
+};
+
+var validRegexTypes = [
+    {
+        regex: /^int\(\d+\)$/,
+        type: 'number'
+    },
+];
+
+function isValidType(type) {
+    throw new Error('');
+}
+
+
+
+
 
 warp.query('select 1 + 2 as num', function(err, result) {
     console.log('>>> query result: ' + JSON.stringify(result));
 });
 
+warp.query('select id, ref_id from t_text limit ?', [10], function(err, result) {
+    console.log('>>> query result: ' + JSON.stringify(result));
+});
+
 setTimeout(function() {
     warp.destroy();
-}, 5000);
+}, 1000);
 
+/*
 warp.update('insert into t_text(id, ref_id, value) values(?,?,?)', ['123', 'ref-123', 'blabla...'], function(err, result) {
     if (err) {
         return console.log('>>> insert failed: ' + err.message);
     }
     console.log('>>> insert result: ' + result);
-});
-
-warp.query('select * from t_text', function(err, result) {
-    console.log('>>> query result: ' + JSON.stringify(result));
 });
 
 setTimeout(function() {
@@ -57,7 +154,6 @@ warp.update('update t_text set value=? where id=?', ['xxsssee', '123'], function
     console.log(err ? 'update failed': 'update ok: ' + JSON.stringify(result));
 })
 
-/**
 
 var User = warp.define('User', [
     {

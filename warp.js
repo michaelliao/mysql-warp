@@ -1,11 +1,47 @@
 // warp.js
 
 var
-    uuid = require('node-uuid'),
-    mysql = require('mysql');
+    _ = require('lodash'),
+    mysql = require('mysql'),
+    validator = require('validator');
 
+// generate random object ID as 'ffffffff':
+function createObjectId() {
+    var s = Math.floor(Math.random() * 0xffffffff).toString(16);
+    var padding = 8 - s.length;
+    while (padding > 0) {
+        s = '0' + s;
+        padding --;
+    }
+    return s;
+}
+
+// set object ID to connection if no objectId exist:
+function setConnectionObjectId(conn) {
+    if (conn.objectId===undefined) {
+        conn.objectId = createObjectId();
+    }
+}
+
+// log connection message:
 function log(conn, name, message) {
-    console.log((conn ? ('[Warp@' + conn.objectId + '] ') : '') + name + ': ' + message);
+    function padding(n, len) {
+        var s = n.toString();
+        var p = len - s.length;
+        while (p > 0) {
+            s = '0' + s;
+            p --;
+        }
+        return s;
+    }
+    var d = new Date();
+    var
+        h = d.getHours(),
+        m = d.getMinutes(),
+        s = d.getSeconds(),
+        ms = d.getMilliseconds();
+    var date = padding(h, 2) + ':' + padding(m, 2) + ':' + padding(s, 2) + '.' + padding(ms, 3);
+    console.log(date + (conn ? (' [Warp@' + conn.objectId + '] ') : ' ') + name + ': ' + message);
 }
 
 function executeSQL(conn, sql, params, callback) {
@@ -16,12 +52,27 @@ function executeSQL(conn, sql, params, callback) {
 }
 
 function Warp(pool) {
-    this.objectId = uuid.v4();
+    var objectId = createObjectId();
+    this.objectId = objectId;
     this.pool = pool;
+    // prepare prototype for sub models:
+    this.model = {
+        className: 'Model',
+        pool: pool,
+        find: function() {
+            console.log('execute find...');
+        },
+        toString: function() {
+            return '[Model(' + this.name + ') Pool@' + objectId + ']:\n' + JSON.stringify(this.columns, undefined, '  ');
+        }
+    };
     console.log('[Pool@' + this.objectId + '] Connection pool created.');
 }
 
 Warp.prototype.className = 'Warp';
+Warp.prototype.toString = function() {
+    return '[Warp Object with Pool@' + this.objectId + ']';
+}
 
 Warp.prototype.destroy = function() {
     console.log('[Pool@' + this.objectId + '] Connection pool destroyed.');
@@ -29,8 +80,48 @@ Warp.prototype.destroy = function() {
     delete this.pool;
 };
 
+function defineColumn(options) {
+    var
+        name = options.name,
+        column = options.column,
+        type = options.type,
+        primaryKey = options.primaryKey ? true: false,
+        allowNull = options.allowNull ? true: false,
+        defaultValue = options.defaultValue,
+        validate = options.validate;
+    var defaultValueIsFunction = typeof(defaultValue)==='function';
+    if (! name || ! validator.matches(name, /^[a-zA-Z0-9\_]+$/)) {
+        throw new Error('name is invalid: ' + name);
+    }
+    if (! column) {
+        column = name;
+    }
+    else if (! validator.matches(column, /^[a-zA-Z0-9\$\_]+$/)) {
+        throw new Error('column is invalid: ' + column);
+    }
+    return {
+        column: column,
+        type: type,
+        primaryKey: primaryKey,
+        allowNull: allowNull,
+        defaultValue: defaultValue,
+        validate: validate,
+        defaultValueIsFunction: defaultValueIsFunction
+    };
+}
+
 Warp.prototype.define = function(name, fields, options) {
-    //
+    var columns = {};
+    _.each(fields, function(options) {
+        columns[options.name] = defineColumn(options);
+    });
+    var that = this;
+    var F = function() {
+        this.name = name;
+        this.columns = columns;
+    };
+    F.prototype = this.model;
+    return new F();
 };
 
 /**
@@ -57,7 +148,7 @@ Warp.prototype.transaction = function(callback) {
             log(null, 'CONNECTION', 'failed get connection when start transaction.');
             return callback(err);
         }
-        conn.objectId = uuid.v4();
+        setConnectionObjectId(conn);
         log(conn, 'TRANSACTION', 'start transaction...');
         conn.beginTransaction(function(err) {
             if (err) {
@@ -114,7 +205,7 @@ Warp.prototype.update = function(sql, params, tx, callback) {
             log('?', 'CONNECTION', 'get connection failed.');
             return callback(err);
         }
-        conn.objectId = uuid.v4();
+        setConnectionObjectId(conn);
         log(conn, 'CONNECTION', 'opened from pool.');
         executeSQL(conn, sql, params, function(err, result) {
             conn.release();
@@ -144,7 +235,7 @@ Warp.prototype.query = function(sql, params, tx, callback) {
             log('?', 'CONNECTION', 'get connection failed.');
             return callback(err);
         }
-        conn.objectId = uuid.v4();
+        setConnectionObjectId(conn);
         log(conn, 'CONNECTION', 'opened from pool.');
         executeSQL(conn, sql, params, function(err, result) {
             conn.release();
