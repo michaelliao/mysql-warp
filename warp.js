@@ -53,6 +53,18 @@ function executeSQL(conn, sql, params, callback) {
     log(conn, 'SQL', query.sql);
 }
 
+/*
+{
+    where: 'title = ? and age > ?',
+    params: ['Heading', 21],
+    select: ['id', 'email', 'password']
+}
+*/
+function parseFindOptions(options) {
+    var where, params;
+
+}
+
 function Warp(pool) {
     this.objectId = createObjectId();
     this.pool = pool;
@@ -62,11 +74,17 @@ function Warp(pool) {
         className: 'Model',
         pool: that.pool,
         find: function(id, callback) {
+            var where, params;
             if (typeof(id)==='object') {
                 //
             }
-            var sql = util.format('select %s from %s where %s = ?', this.table);
+            else {
+                where = '`' + this.primaryKey + '` = ?';
+                params = [id];
+            }
+            var sql = util.format('select %s from `%s` where %s', this.fieldNames, this.table, where);
             console.log('execute SQL: ' + sql);
+            console.log('SQL params: ' + JSON.stringify(params));
         },
         toString: function() {
             return '[Model(' + this.name + ') Pool@' + that.objectId + ']:\n' + JSON.stringify(this, undefined, '  ');
@@ -121,6 +139,16 @@ Warp.prototype.define = function(name, fieldConfigs, options) {
     _.each(fieldConfigs, function(options) {
         fields[options.name] = defineColumn(options);
     });
+    var primaryKeys = _.filter(fields, function(f) {
+        return f.primaryKey;
+    });
+    if (primaryKeys.length===0) {
+        throw new Error('Primary key not found in ' + name);
+    }
+    if (primaryKeys.length > 1) {
+        throw new Error('More than 1 primary keys are found in ' + name);
+    }
+    var primaryKey = primaryKeys[0].column;
     var table = options && options.table || name;
     var that = this;
     var F = function() {
@@ -130,6 +158,11 @@ Warp.prototype.define = function(name, fieldConfigs, options) {
         this.fieldNames = _.map(fields, function(f) {
             return '`' + f.column + '`';
         }).join(', ');
+        this.primaryKey = primaryKey;
+        this.build = function(attrs) {
+            // create instance:
+            // TODO:
+        };
     };
     F.prototype = this.model;
     return new F();

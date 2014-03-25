@@ -36,12 +36,18 @@ var User = warp.define('User', [
     table: 'users'
 });
 
-var Page = warp.define('Page', [], {});
+var Page = warp.define('Page', [{
+        name: 'id',
+        column: '_id',
+        type: 'varchar(50)',
+        primaryKey: true,
+        allowNull: false
+    }], {});
 
 console.log('--> ' + User);
 console.log('--> ' + Page);
 
-User.find();
+User.find(123);
 
 function hello() {
     console.log('*** ' + this.name);
