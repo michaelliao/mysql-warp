@@ -17,13 +17,13 @@
         "url": "https://github.com/michaelliao/mysql-warp/issues"
     },
     "dependencies": {
-        "mysql": "2.0.1",
-        "async": "~0.2.10",
-        "lodash": "~2.4.0",
-        "node-uuid": "~1.4.1"
+        "mysql": "2.1.1",
+        "async": "0.2.10",
+        "lodash": "2.4.1",
+        "validator": "3.5.0"
     },
     "devDependencies": {
-        "mocha": "~1.17.0"
+        "mocha": "1.18.x"
     },
     "keywords": [
         "mysql",
