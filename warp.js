@@ -1,5 +1,7 @@
 // warp.js
 
+var util = require('util');
+
 var
     _ = require('lodash'),
     mysql = require('mysql'),
@@ -52,18 +54,22 @@ function executeSQL(conn, sql, params, callback) {
 }
 
 function Warp(pool) {
-    var objectId = createObjectId();
-    this.objectId = objectId;
+    this.objectId = createObjectId();
     this.pool = pool;
     // prepare prototype for sub models:
+    var that = this;
     this.model = {
         className: 'Model',
-        pool: pool,
-        find: function() {
-            console.log('execute find...');
+        pool: that.pool,
+        find: function(id, callback) {
+            if (typeof(id)==='object') {
+                //
+            }
+            var sql = util.format('select %s from %s where %s = ?', this.table);
+            console.log('execute SQL: ' + sql);
         },
         toString: function() {
-            return '[Model(' + this.name + ') Pool@' + objectId + ']:\n' + JSON.stringify(this.columns, undefined, '  ');
+            return '[Model(' + this.name + ') Pool@' + that.objectId + ']:\n' + JSON.stringify(this, undefined, '  ');
         }
     };
     console.log('[Pool@' + this.objectId + '] Connection pool created.');
@@ -110,15 +116,20 @@ function defineColumn(options) {
     };
 }
 
-Warp.prototype.define = function(name, fields, options) {
-    var columns = {};
-    _.each(fields, function(options) {
-        columns[options.name] = defineColumn(options);
+Warp.prototype.define = function(name, fieldConfigs, options) {
+    var fields = {};
+    _.each(fieldConfigs, function(options) {
+        fields[options.name] = defineColumn(options);
     });
+    var table = options && options.table || name;
     var that = this;
     var F = function() {
         this.name = name;
-        this.columns = columns;
+        this.table = table;
+        this.fields = fields;
+        this.fieldNames = _.map(fields, function(f) {
+            return '`' + f.column + '`';
+        }).join(', ');
     };
     F.prototype = this.model;
     return new F();
