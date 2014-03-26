@@ -33,7 +33,7 @@
         "nodejs",
         "object relational mapper"
     ],
-    "main": "index",
+    "main": "warp.js",
     "scripts": {
         "test": "make all",
         "docs": "node_modules/.bin/yuidoc . -o docs"
@@ -41,5 +41,5 @@
     "engines": {
         "node": ">=0.10.0"
     },
-    "license": "Apache"
+    "license": "MIT"
 }

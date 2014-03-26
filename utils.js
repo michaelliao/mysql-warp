@@ -31,7 +31,6 @@ function createPlaceholders(length) {
 function parseColumnDefinition(options) {
     var
         name = options.name,
-        column = options.column,
         type = options.type,
         primaryKey = options.primaryKey ? true: false,
         allowNull = options.allowNull ? true: false,
@@ -41,15 +40,8 @@ function parseColumnDefinition(options) {
     if (! name || ! validator.matches(name, /^[a-zA-Z0-9\_]+$/)) {
         throw new Error('name is invalid: ' + name);
     }
-    if (! column) {
-        column = name;
-    }
-    else if (! validator.matches(column, /^[a-zA-Z0-9\$\_]+$/)) {
-        throw new Error('column is invalid: ' + column);
-    }
     return {
         name: name,
-        column: column,
         type: type,
         primaryKey: primaryKey,
         allowNull: allowNull,
@@ -66,14 +58,12 @@ function parseModelDefinition(name, fieldConfigs, options) {
     var columns = _.map(fieldConfigs, function(options) {
         return parseColumnDefinition(options);
     });
-    var attributesToFields = {};
-    var fieldsToAttributes = {};
+    var attributes = {};
     _.each(columns, function(col) {
-        attributesToFields[col.name] = col;
-        fieldsToAttributes[col.column] = col;
+        attributes[col.name] = col;
     });
-    var primaryKeys = _.filter(attributesToFields, function(f) {
-        return f.primaryKey;
+    var primaryKeys = _.filter(columns, function(c) {
+        return c.primaryKey;
     });
     if (primaryKeys.length===0) {
         throw new Error('Primary key not found in ' + name);
@@ -81,34 +71,23 @@ function parseModelDefinition(name, fieldConfigs, options) {
     if (primaryKeys.length > 1) {
         throw new Error('More than 1 primary keys are found in ' + name);
     }
-    var
-        primaryKeyName = primaryKeys[0].name,
-        primaryKeyField = primaryKeys[0].column;
+    var primaryKey = primaryKeys[0].name;
 
     var attributesArray = _.map(columns, function(c) {
         return c.name;
     });
     var attributesArrayWithoutPK = _.filter(attributesArray, function(attr) {
-        return attr !== primaryKeyName;
+        return attr !== primaryKey;
     });
     return {
-        length: columns.length,
         name: name,
         table: options && options.table || name,
-        primaryKeyName: primaryKeyName,
-        primaryKeyField: primaryKeyField,
-        attributesToFields: attributesToFields,
-        fieldsToAttributes: fieldsToAttributes,
-        fieldsArray: _.map(columns, function(c) {
-            return c.column;
-        }),
+        primaryKey: primaryKey,
+        attributes: attributes,
         attributesArray: attributesArray,
         attributesArrayWithoutPK: attributesArrayWithoutPK,
-        fieldsNames: _.map(columns, function(c) {
-            return '`' + c.column + '`';
-        }).join(', '),
-        attributesNames: _.map(columns, function(c) {
-            return c.name;
+        attributesNames: _.map(attributesArray, function(attr) {
+            return '`' + attr + '`';
         }).join(', '),
         preInsert: options.preInsert || null,
         preUpdate: options.preUpdate || null,
