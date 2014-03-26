@@ -23,7 +23,8 @@
         "validator": "3.5.0"
     },
     "devDependencies": {
-        "mocha": "1.18.x"
+        "mocha": "1.18.x",
+        "should": "3.x"
     },
     "keywords": [
         "mysql",
