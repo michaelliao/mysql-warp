@@ -13,7 +13,8 @@ var warp = Warp.create({
     database: 'itranswarp'
 });
 
-console.log('>>> ' + warp);
+console.log('var warp = ' + warp);
+console.log('var warp.model = ' + warp.model);
 
 var User = warp.define('User', [
     {
@@ -33,97 +34,60 @@ var User = warp.define('User', [
         allowNull: false
     }
 ], {
-    table: 'users'
+    table: 'users',
+    preInsert: function(obj) {
+        console.log('preInsert:user');
+        obj.password = '******';
+    },
+    preUpdate: function(obj) {
+        console.log('preUpdate:user');
+        obj.password = 'updated-******';
+    },
+    custom: {
+        display: function() {
+            console.log(this.email + '/' + this.password);
+        }
+    }
 });
 
-var Page = warp.define('Page', [{
-        name: 'id',
-        column: '_id',
-        type: 'varchar(50)',
-        primaryKey: true,
-        allowNull: false
-    }], {});
+console.log('var User = ' + User);
+User.inspect();
 
-console.log('--> ' + User);
-console.log('--> ' + Page);
+var u = User.build({
+    id: 1234,
+    email: 'test'
+});
 
+console.log('var u = ' + u);
+console.log('JSON(u) = ' + JSON.stringify(u));
+u.save(function() {});
+console.log('JSON(u) = ' + JSON.stringify(u));
+u.destroy(function() {});
+
+u.update(function() {});
+u.update(function() {})
 User.find(123);
 
-function hello() {
-    console.log('*** ' + this.name);
-}
 
-var d = {
-    name: 'Dog',
-    hello: hello
-};
-
-var c = {
-    name: 'Cat',
-    hello: hello
-}
-
-d.hello();
-c.hello();
-
-
-
-var f = {
-        name: 'id',
-        column: 'id',
-        type: 'varchar(50)',
-        primaryKey: true,
-        'allowNull': false,
-        'validate': 'ok',
-    };
-
-_.each(f, function(v, k) {
-    console.log(k + ' ==> ' + v);
-});
-
-var validTypes = {
-    'int':       'number',
-    'integer':   'number',
-    'bigint':    'number',
-    'float':     'number',
-    'double':    'number',
-    'real':      'number',
-    'bool':      'boolean',
-    'boolean':   'boolean',
-    'date':      'date',
-    'time':      'time',
-    'datetime':  'datetime',
-    'timestamp': 'number',
-    'varchar':   'string',
-    'char':      'string'
-};
-
-var validRegexTypes = [
-    {
-        regex: /^int\(\d+\)$/,
-        type: 'number'
-    },
-];
-
-function isValidType(type) {
-    throw new Error('');
-}
-
-
-
-
-
-warp.query('select 1 + 2 as num', function(err, result) {
-    console.log('>>> query result: ' + JSON.stringify(result));
-});
-
-warp.query('select id, ref_id from t_text limit ?', [10], function(err, result) {
-    console.log('>>> query result: ' + JSON.stringify(result));
-});
 
 setTimeout(function() {
     warp.destroy();
 }, 1000);
+
+console.log('User: ' + User);
+console.log('User.prototype --> ' + User.__proto__);
+
+var u = User.build({
+    id: 'abc',
+    email: 'pass@user.com',
+    created_at: Date.now()
+});
+
+console.log('u: ' + u);
+
+u.find();
+
+
 
 /*
 warp.update('insert into t_text(id, ref_id, value) values(?,?,?)', ['123', 'ref-123', 'blabla...'], function(err, result) {
