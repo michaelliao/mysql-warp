@@ -33,6 +33,7 @@ function parseColumnDefinition(options) {
         name = options.name,
         type = options.type,
         primaryKey = options.primaryKey ? true: false,
+        autoIncrement = primaryKey && (options.autoIncrement ? true: false),
         allowNull = options.allowNull ? true: false,
         defaultValue = options.defaultValue,
         validate = options.validate;
@@ -44,6 +45,7 @@ function parseColumnDefinition(options) {
         name: name,
         type: type,
         primaryKey: primaryKey,
+        autoIncrement: autoIncrement,
         allowNull: allowNull,
         defaultValue: defaultValue,
         validate: validate,
@@ -72,22 +74,35 @@ function parseModelDefinition(name, fieldConfigs, options) {
         throw new Error('More than 1 primary keys are found in ' + name);
     }
     var primaryKey = primaryKeys[0].name;
+    var fetchInsertId = primaryKeys[0].autoIncrement;
 
-    var attributesArray = _.map(columns, function(c) {
+    var selectAttributesArray = _.map(columns, function(c) {
         return c.name;
     });
-    var attributesArrayWithoutPK = _.filter(attributesArray, function(attr) {
-        return attr !== primaryKey;
+    var updateAttributesArray = _.map(_.filter(columns, function(c) {
+        return ! c.primaryKey;
+    }), function(c) {
+        return c.name;
+    });
+    var insertAttributesArray = _.map(_.filter(columns, function(c) {
+        return ! c.autoIncrement;
+    }), function(c) {
+        return c.name;
     });
     return {
         name: name,
         table: options && options.table || name,
         primaryKey: primaryKey,
+        fetchInsertId: fetchInsertId,
         attributes: attributes,
-        attributesArray: attributesArray,
-        attributesArrayWithoutPK: attributesArrayWithoutPK,
-        attributesNames: _.map(attributesArray, function(attr) {
-            return '`' + attr + '`';
+        selectAttributesArray: selectAttributesArray,
+        insertAttributesArray: insertAttributesArray,
+        updateAttributesArray: updateAttributesArray,
+        selectAttributesNames: _.map(selectAttributesArray, function(name) {
+            return '`' + name + '`';
+        }).join(', '),
+        insertAttributesNames: _.map(insertAttributesArray, function(name) {
+            return '`' + name + '`';
         }).join(', '),
         preInsert: options.preInsert || null,
         preUpdate: options.preUpdate || null,

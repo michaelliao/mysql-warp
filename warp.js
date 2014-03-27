@@ -73,36 +73,76 @@ function smartRunSQL(pool, sql, params, tx, callback) {
     offset: 0
 }
 */
+function parseFindOptions(model, options, expectSingleResult) {
+    var select = (Array.isArray(options.select) ? _.map(options.select, function(f) {
+        return '`' + f + '`';
+    }).join(', ') : options.select) || model.__selectAttributesNames;
 
-// find by id or options:
+    var where = options.where;
+    var params = options.params || [];
+
+    if ( ! where || typeof(where)!=='string') {
+        throw new Error('Must specify \'where\' in options.');
+    }
+    if (options.order) {
+        where = where + ' order by ' + options.order;
+    }
+    var limit = options.limit;
+    var offset = options.offset;
+
+    if (limit===undefined && expectSingleResult) {
+        limit = 2;
+    }
+
+    if (limit && offset) {
+        where = where + ' limit ' + offset + ',' + limit;
+    }
+    else {
+        if (limit) {
+            where = where + ' limit ' + limit;
+        }
+        if (offset) {
+            where = where + ' limit ' + offset + ',2147483647';
+        }
+    }
+    return {
+        select: select,
+        where: where,
+        params: params
+    };
+}
+
+function findAll(model, options, tx, callback) {
+    var parsed = parseFindOptions(model, options, false);
+    var
+        select = parsed.select,
+        where = parsed.where,
+        params = parsed.params;
+    var sql = utils.format('select %s from `%s` where %s', select, model.__table, where);
+    smartRunSQL(model.__pool, sql, params, tx, function(err, results) {
+        if (err) {
+            return callback(err);
+        }
+        return callback(null, _.map(results, function(r) {
+            return model.__warp.createInstance(model, r);
+        }));
+    });
+}
+
+// find one and only one results by id or options:
 function find(model, id, tx, callback) {
     var select, where, params;
     var complexFind = typeof(id)==='object';
     if (complexFind) {
-        select = id.select || model.__attributesNames;
-        where = id.where;
-        params = id.params || [];
-        if ( ! where || typeof(where)!=='string') {
-            throw new Error('Must specify \'where\' in options.');
-        }
-        if (id.order) {
-            where = where + ' order by ' + id.order;
-        }
-        if (id.limit && id.offset) {
-            where = where + ' limit ' + id.offset + ',' + id.limit;
-        }
-        else {
-            if (id.limit) {
-                where = where + ' limit ' + id.limit;
-            }
-            if (id.offset) {
-                where = where + ' limit ' + id.offset + ',2147483647';
-            }
-        }
+        var parsed = parseFindOptions(model, id, true);
+
+        select = parsed.select;
+        where = parsed.where;
+        params = parsed.params;
     }
     else {
         // by primary key:
-        select = model.__attributesNames;
+        select = model.__selectAttributesNames;
         where = '`' + model.__primaryKey + '`=?';
         params = [id];
     }
@@ -111,18 +151,10 @@ function find(model, id, tx, callback) {
         if (err) {
             return callback(err);
         }
-        var entities = _.map(results, function(attrs) {
-            console.log('>>> conver >>> ' + model);
-            var ins = model.__warp.createInstance(model, attrs);
-            console.log('>>> conver >>> ' + ins.__model);
-            console.log('>>> conver >>> ' + ins);
-            console.log('>>> conver >>> ' + JSON.stringify(ins));
-            return ins;
-        });
-        if (complexFind) {
-            return callback(null, entities);
+        if (results.length > 1) {
+            return callback(new Error('Multiple results found.'));
         }
-        return callback(null, entities.length===0 ? null : entities[0]);
+        return callback(null, results.length===0 ? null : model.__warp.createInstance(model, results[0]));
     });
 }
 
@@ -133,13 +165,26 @@ function save(instance, tx, callback) {
         preInsert = model.__preInsert;
     preInsert && preInsert(instance);
     // insert into TABLE () values (???)
-    var params = _.map(model.__attributesArray, function(attr) {
-        return instance[attr];
+    var params = _.map(model.__insertAttributesArray, function(attr) {
+        if (instance.hasOwnProperty(attr)) {
+            return instance[attr];
+        }
+        var def = model.__attributes[attr];
+        if (def.defaultValue!==undefined) {
+            var value = def.defaultValueIsFunction ? def.defaultValue() : def.defaultValue;
+            instance[attr] = value;
+            return value;
+        }
+        instance[attr] = null;
+        return null;
     });
-    var sql = utils.format('insert into `%s` (%s) values(%s)', model.__table, model.__attributesNames, utils.createPlaceholders(model.__attributesLength));
+    var sql = utils.format('insert into `%s` (%s) values(%s)', model.__table, model.__insertAttributesNames, utils.createPlaceholders(model.__insertAttributesArray.length));
     smartRunSQL(model.__pool, sql, params, tx, function(err, result) {
         if (err) {
             return callback(err);
+        }
+        if (model.__fetchInsertId) {
+            instance[model.__primaryKey] = result.insertId;
         }
         callback(null, instance);
     });
@@ -154,7 +199,7 @@ function update(instance, array, tx, callback) {
 
     var updates, params;
     if (! array) {
-        array = model.__attributesArrayWithoutPK;
+        array = model.__updateAttributesArray;
     }
     updates = _.map(array, function(attr) {
         return '`' + attr + '`=?';
@@ -199,6 +244,16 @@ function BaseModel(warpObject) {
             tx = undefined;
         }
         find(this, id, tx, callback);
+    };
+    this.findAll = function(options, tx, callback) {
+        if (! this.__isModel) {
+            throw new Error('Cannot invoke findAll() on instance: ' + this);
+        }
+        if (arguments.length===2) {
+            callback = tx;
+            tx = undefined;
+        }
+        findAll(this, options, tx, callback);
     };
     this.save = function(tx, callback) {
         if (this.__isModel) {
@@ -276,25 +331,29 @@ function createSubModel(baseModel, definitions) {
         this.__name = definitions.name;
         this.__table = definitions.table;
 
-        this.__attributesNames = definitions.attributesNames;
-        this.__attributesArray = definitions.attributesArray;
-        this.__attributesArrayWithoutPK = definitions.attributesArrayWithoutPK;
+        this.__selectAttributesNames = definitions.selectAttributesNames;
+        this.__insertAttributesNames = definitions.insertAttributesNames;
 
-        this.__attributesLength = this.__attributesArray.length;
+        this.__selectAttributesArray = definitions.selectAttributesArray;
+        this.__insertAttributesArray = definitions.insertAttributesArray;
+        this.__updateAttributesArray = definitions.updateAttributesArray;
 
         this.__attributes = definitions.attributes;
 
         this.__primaryKey = definitions.primaryKey;
+        this.__fetchInsertId = definitions.fetchInsertId;
 
         this.__preInsert = definitions.preInsert;
         this.__preUpdate = definitions.preUpdate;
 
-        this.inspector = function() {
+        this.inspect = function() {
             console.log('Model: ' + this.__name);
             console.log('Table: ' + this.__table);
             console.log('Attributes: ' + JSON.stringify(this.__attributes, undefined, '  '));
-            console.log('AttributesNames: ' + this.__attributesNames);
-            console.log('AttrubutesArray: ' + JSON.stringify(this.__attributesArray));
+            console.log('InsertAttributesNames: ' + this.__insertAttributesNames);
+            console.log('SelectAttributesArray: ' + JSON.stringify(this.__selectAttributesArray));
+            console.log('InsertAttributesArray: ' + JSON.stringify(this.__insertAttributesArray));
+            console.log('UpdateAttributesArray: ' + JSON.stringify(this.__updateAttributesArray));
             console.log('preInsert: ' + this.__preInsert);
             console.log('preUpdate: ' + this.__preUpdate);
         };
