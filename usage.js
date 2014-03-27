@@ -19,6 +19,7 @@ var User = warp.define('User', [
         name: 'id',
         type: 'varchar(50)',
         primaryKey: true,
+        autoIncrement: true,
         allowNull: false
     },
     {
@@ -51,19 +52,30 @@ var User = warp.define('User', [
         obj.updated_at = Date.now();
     }
 });
-
-User.find({
-    where: 'email<=?',
-    params: ['aaa@11'],
-    order: 'email desc',
-    limit: 5,
-    offset: 1
-}, function(err, entities) {
-    console.log('=======');
-    console.log('=======');
-    console.log(entities[0]);
-    console.log(entities[0].__model);
-    console.log('=======');
-    console.log('=======');
-    console.log('=======');
+User.build({
+                id: 'find-007',
+                email: 'x007@007.mil',
+                passwd: 'double0-7'
+            }).save(function(err, ori) {
+                should(err).not.be.ok;
+                User.find({
+                    select: ['id', 'email'],
+                    where: 'id=?',
+                    params: ['find-007']
+                }, function(err, entity) {
+                    should(err).not.be.ok;
+                    should(entity).be.ok;
+                    entity.id.should.equal('find-007');
+                    entity.email.should.equal('x007@007.mil');
+                    should(entity.passwd===undefined).be.true; // passwd not in select array!
+                    entity.created_at.should.equal(entity.updated_at);
+                    entity.created_at.should.approximately(Date.now(), 1000);
+                    done();
+                });
+            });
+User.build({
+    id: 's332111',
+    email: 'fjjfsfdajsie@libr.scofe'
+}).save(function(err, result) {
+    console.log(JSON.stringify(result));
 });
