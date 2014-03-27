@@ -14,6 +14,8 @@ var warp = Warp.create({
     database: 'itranswarp'
 });
 
+console.log(warp.query===warp.update);
+
 var User = warp.define('User', [
     {
         name: 'id',
