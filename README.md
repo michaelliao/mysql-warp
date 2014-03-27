@@ -24,18 +24,18 @@ To get the ball rollin' you first have to create an instance of warp. Use it the
         host: 'localhost',
         user: 'www',
         password: 'www',
-        database: 'itranswarp'
+        database: 'warp'
     });
 
-You should set at lease the 4 options above. For more options please refer [https://github.com/felixge/node-mysql/blob/master/Readme.md#connection-options].
+You should set at lease the 4 options above. For more options please refer [https://github.com/felixge/node-mysql/blob/master/Readme.md#connection-options]. And please NOTE the default `charset` is set to `UTF8_GENERAL_CI`, so make sure your mysql server has configured using charset of UTF8.
 
 You may find those options are useful:
 
-* waitForConnections: Determines the pool's action when no connections are available and the limit has been reached. If true, the pool will queue the connection request and call it when one becomes available. If false, the pool will immediately call back with an error. (Default: true)
+* `waitForConnections`: Determines the pool's action when no connections are available and the limit has been reached. If true, the pool will queue the connection request and call it when one becomes available. If false, the pool will immediately call back with an error. (Default: true)
 
-* connectionLimit: The maximum number of connections to create at once. (Default: 10)
+* `connectionLimit`: The maximum number of connections to create at once. (Default: 10)
 
-* queueLimit: The maximum number of connection requests the pool will queue before returning an error from getConnection. If set to 0, there is no limit to the number of queued connection requests. (Default: 0)
+* `queueLimit`: The maximum number of connection requests the pool will queue before returning an error from getConnection. If set to 0, there is no limit to the number of queued connection requests. (Default: 0)
 
 ## Executing raw SQL queries
 
@@ -43,7 +43,7 @@ You can use warp object to execute any raw SQL queries.
 
 Here is an example of how to select:
 
-    warp.query('select id, name from users where score > ? and score < ?', [60, 100], function(err, results) {
+    warp.query('select * from users where score > ? and score < ?', [60, 100], function(err, results) {
         if (err) {
             // something error
         }
@@ -55,17 +55,17 @@ Here is an example of how to select:
 
 The query accepts 4 arguments:
 
-* SQL: any SQL statement as string you want to execute, parameters are represented by a ?;
+* `sql`: any SQL statement as string you want to execute, parameters are represented by a ?;
 
-* parameters: (optional) parameters as array, and ? will be replaced in the order that they appear in the array;
+* `params`: (optional) parameters as array, and ? will be replaced in the order that they appear in the array;
 
-* tx: (optional) a transaction object. See [#transaction] for more details;
+* `tx`: (optional) a transaction object. See [#transaction] for more details;
 
-* callback: a callback function with signature funcation(err, results).
+* `callback`: a callback function with signature funcation(err, results).
 
 ### Query for count
 
-When use count() in select statement, you can get the number by:
+When use `count()` in select statement, you can get the number by:
 
     warp.query('select count(*) as num from users', function(err, results) {
         if (err) {
@@ -81,7 +81,7 @@ When use count() in select statement, you can get the number by:
 
 ### Execute update
 
-You can also run update/delete/insert statement in query():
+You can also run update / delete / insert statement in query():
 
     warp.query('update users set name=? where id=?', ['John', 123], function(err, results) {
         if (err) {
@@ -95,15 +95,23 @@ You can also run update/delete/insert statement in query():
         }
     });
 
+If you feel `update()` is better, you can use `warp.update()`. In fact, `warp.update` is an alias of `warp.query`:
+
+    warp.query===warp.update; // true
+
 # Models
 
 ## Definition
 
-Use the define() method to define mappings between a model and a table. define() method accepts 3 arguments:
+Use the `define()` method to define mappings between a model and a table. `define()` method accepts 3 arguments:
 
-    warp.define('ModelName', [{column-definition-1}, {}... ], {options});
+    warp.define('ModelName', [
+        { column-definition-1 },
+        { column-definition-2 },
+        ...
+    ], { optional options });
 
-An example of defining a User model:
+An example of defining a `User` model:
 
     var User = warp.define('User', [
         {
@@ -136,27 +144,29 @@ An example of defining a User model:
 
 Column definition options:
 
-* name: column name, the same to property name;
+* `name`: column name, the same to property name;
 
-* type: any valid MySQL data type, representing as a string;
+* `type`: any valid MySQL data type, representing as a string;
 
-* primaryKey: true if this column is primary key, default to false;
+* `primaryKey`: true if this column is primary key, default to false;
 
-* autoIncrement: true if this column is auto-increment, only available for primary key, default to false;
+* `autoIncrement`: true if this column is auto-increment, only available for primary key, default to false;
 
-* unique: true if this column has a unique key, default to false;
+* `unique`: true if this column has a unique key, default to false;
 
-* allowNull: true if this column accepts NULL value, default to false;
+* `allowNull`: true if this column accepts NULL value, default to false;
 
-* defaultValue: use defaultValue on save() when attribute is not found, default to `undefined`. NOTE `undefined` is not `null`, and you can set defaultValue to `null`. You can also set defaultValue to a function to evaluate the defaultValue in the runtime, e.g. `Date.now`.
+* `index`: true if this column should have an index, default to false. This option is only used to generate DDL scripts;
+
+* `defaultValue`: use defaultValue on save() when attribute is not found, default to `undefined`. NOTE `undefined` is not `null`, and you can set defaultValue to `null`. You can also set defaultValue to a function to evaluate the defaultValue in the runtime, e.g. `Date.now`.
 
 You can customize the Model by `options`. Those are useful options:
 
-* table: table name, default to model name;
+* `table`: table name, default to model name;
 
-* preInsert: a function to allow you to do some modifications on an instance before saved;
+* `preInsert`: a function to allow you to do some modifications on an instance before saved;
 
-* preUpdate: a function to allow you to do some modifications on an instance before updated;
+* `preUpdate`: a function to allow you to do some modifications on an instance before updated;
 
 ## Save data
 
@@ -252,3 +262,64 @@ Delete data is by `destroy()` method, and a deletion operation always delete rec
         }
     });
 
+You can delete an instance successfully if it's primary key attribute exist:
+
+    User.build({
+        id: 123
+    }).destroy(function(err, entity) {});
+
+# Transaction
+
+Transaction can be opened by `warp.transaction()` method:
+
+    warp.transaction(function(err, tx) {
+        if (err) {
+            // transaction starts failed:
+            // handle error
+        }
+        else {
+            // transaction starts successfully:
+            // your database operations goes here:
+            // TODO:
+            // finally, commit or rollback transaction
+            // by passing err a null / non-null value:
+            var err = commit ? null : new Error('will rollback');
+            tx.done(err, function(err) {
+                // transaction done!
+            }
+        }
+    });
+
+A good practice of orgnize your database operations in a transaction is using `async.waterfall()` to execute each database operation seriallized:
+
+    warp.transaction(function(err, tx) {
+        if (err) {
+            // transaction starts failed:
+            // handle error
+        }
+        else {
+            async.waterfall([
+                function(callback) {
+                    // find entity:
+                    User.find(123, tx, callback); // don't forget pass tx object!
+                },
+                function(user, callback) {
+                    // do an update:
+                    user.status = 'pending';
+                    user.update(tx, callback);
+                }
+            ], function(err, result) {
+                tx.done(err, function(err) {
+                    console.log(err===null ? 'tx committed' : 'tx rollbacked');
+                });
+            });
+        }
+    });
+
+Don't forget pass tx object in each transactional operations, otherwise a new connection will be used and its execution is out of the transaction scope.
+
+# Q & A
+
+Q: Does mysql-warp support one-to-many, many-to-many releationships?
+
+A: No. mysql-warp is a thin wrapper for table-object mapping which makes it very fast and the SQL is totally under your control.
