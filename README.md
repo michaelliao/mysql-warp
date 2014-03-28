@@ -55,13 +55,13 @@ Here is an example of how to select:
 
 The query accepts 4 arguments:
 
-* `sql`: any SQL statement as string you want to execute, parameters are represented by a ?;
+* `sql`: any SQL statement as string you want to execute, parameters are represented by a `?`;
 
-* `params`: (optional) parameters as array, and ? will be replaced in the order that they appear in the array;
+* `params`: (optional) parameters as array, and `?` will be replaced in the order that they appear in the array;
 
 * `tx`: (optional) a transaction object. See [#transaction] for more details;
 
-* `callback`: a callback function with signature funcation(err, results).
+* `callback`: a callback function(err, results).
 
 ### Query for count
 
