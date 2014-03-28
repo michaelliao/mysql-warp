@@ -1,7 +1,8 @@
 {
     "name": "mysql-warp",
+    "main": "warp.js",
+    "version": "0.1.0",
     "description": "Simple ORM for MySQL on Node.js",
-    "version": "1.0.0",
     "author": "Michael Liao <askxuefeng@gmail.com>",
     "contributors": [
         {
@@ -9,6 +10,7 @@
             "email": "askxuefeng@gmail.com"
         }
     ],
+    "homepage": "https://github.com/michaelliao/mysql-warp",
     "repository": {
         "type": "git",
         "url": "https://github.com/michaelliao/mysql-warp.git"
@@ -18,11 +20,11 @@
     },
     "dependencies": {
         "mysql": "2.1.1",
-        "async": "0.2.10",
         "lodash": "2.4.1",
         "validator": "3.5.0"
     },
     "devDependencies": {
+        "async": "0.2.10",
         "mocha": "1.18.x",
         "should": "3.x"
     },
@@ -33,13 +35,8 @@
         "nodejs",
         "object relational mapper"
     ],
-    "main": "warp.js",
-    "scripts": {
-        "test": "make all",
-        "docs": "node_modules/.bin/yuidoc . -o docs"
-    },
     "engines": {
-        "node": ">=0.10.0"
+        "node": ">=0.8.0"
     },
-    "license": "MIT"
+    "license": "Apache License"
 }
