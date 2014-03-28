@@ -72,10 +72,22 @@ When use `count()` in select statement, you can get the number by:
             // something error
         }
         else {
-            console.log(JSON.stringify(results);
+            console.log(JSON.stringify(results));
             // [{"num": 10}]
             // so get the number:
             var num = results[0].num;
+        }
+    });
+
+If select statement only return a single number, you can use `queryNumber()` to get the number:
+
+    warp.queryNumber('select count(*) as num from users', function(err, num) {
+        if (err) {
+            // something error
+        }
+        else {
+            console.log(num);
+            // 10
         }
     });
 
@@ -213,6 +225,17 @@ Be careful when you use `find({options})`. Error occurs if multiple results foun
 
 To find all results you can use `findAll()`. `findAll()` only accept options, and it always returns an array of results, empty array was returned if no record found.
 
+There is also a useful `findNumber()` method which can get number from `count(*)` select:
+
+    User.findNumber({
+        select: 'count(*)',
+        where: 'name=?',
+        params: ['Michael']
+    }, function(err, num) {
+        console.log(num);
+        // 1
+    });
+
 ## Update data
 
 When you got data by `find()` or `findAll()` method, you can update instance by `update()` method:
@@ -290,7 +313,7 @@ Transaction can be opened by `warp.transaction()` method:
         }
     });
 
-A good practice of orgnize your database operations in a transaction is using `async.waterfall()` to execute each database operation seriallized:
+A good practice of organize your database operations in a transaction is using `async.waterfall()` to execute each database operation seriallized:
 
     warp.transaction(function(err, tx) {
         if (err) {
@@ -322,4 +345,4 @@ Don't forget pass tx object in each transactional operations, otherwise a new co
 
 Q: Does mysql-warp support one-to-many, many-to-many releationships?
 
-A: No. mysql-warp is a thin wrapper for table-object mapping which makes it very fast and the SQL is totally under your control.
+A: No. mysql-warp is a thin wrapper for table-object mapping which makes it very fast and all SQLs are totally under your control.
