@@ -124,7 +124,7 @@ function findAll(model, options, tx, callback) {
             return callback(err);
         }
         return callback(null, _.map(results, function(r) {
-            return model.__warp.createInstance(model, r);
+            return model.__warp.__createInstance(model, r);
         }));
     });
 }
@@ -154,7 +154,7 @@ function find(model, id, tx, callback) {
         if (results.length > 1) {
             return callback(new Error('Multiple results found.'));
         }
-        return callback(null, results.length===0 ? null : model.__warp.createInstance(model, results[0]));
+        return callback(null, results.length===0 ? null : model.__warp.__createInstance(model, results[0]));
     });
 }
 
@@ -308,7 +308,7 @@ function BaseModel(warpObject) {
             throw new Error('Cannot build instance on instance.');
         }
         console.log('Build instance on ' + this + '...');
-        return this.__warp.createInstance(this, attrs);
+        return this.__warp.__createInstance(this, attrs);
     };
     this.toJSON = function() {
         return _.filter(this, function(v, k) {
@@ -389,7 +389,7 @@ function Warp(pool) {
     Instance.prototype = this.__model;
     Instance.prototype.constructor = Instance;
 
-    this.createInstance = function(subModel, attrs) {
+    this.__createInstance = function(subModel, attrs) {
         return new Instance(subModel, attrs);
     };
 
