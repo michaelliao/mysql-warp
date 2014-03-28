@@ -207,7 +207,15 @@ describe('#warp', function() {
                     entities.should.have.length(5);
                     entities[0].email.should.equal('aaa@108.com');
                     entities[4].email.should.equal('aaa@104.com');
-                    done();
+                    // count:
+                    User.findNumber({
+                        select: 'count(*)',
+                        where: 'email<=?',
+                        params: ['aaa@11']
+                    }, function(err, num) {
+                        num.should.equal(10);
+                        done();
+                    });
                 });
             });
         });
@@ -287,7 +295,10 @@ describe('#warp', function() {
                         var r = results[i];
                         r.name.should.equal('food-no-' + i);
                     }
-                    done();
+                    warp.queryNumber('select count(*) from foods where extra=?', ['Apple Inc.'], function(err, num) {
+                        num.should.equal(100);
+                        done();
+                    });
                 });
             });
         });

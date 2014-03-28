@@ -112,6 +112,37 @@ function parseFindOptions(model, options, expectSingleResult) {
     };
 }
 
+function findNumber(model, options, tx, callback) {
+    if (typeof(options.select)!=='string') {
+        throw new Error('You need specify select as string like \'count(*)\'.');
+    }
+    var parsed = parseFindOptions(model, options, false);
+    var
+        select = parsed.select,
+        where = parsed.where,
+        params = parsed.params;
+    var sql = utils.format('select %s from `%s` where %s', select, model.__table, where);
+    smartRunSQL(model.__pool, sql, params, tx, function(err, results) {
+        if (err) {
+            return callback(err);
+        }
+        if (! Array.isArray(results)) {
+            return callback(new Error('No record returned.'));
+        }
+        if (results.length===0) {
+            return callback(new Error('Multiple results returned.'));
+        }
+        var num, r = results[0];
+        for (var key in r) {
+            if (r.hasOwnProperty(key)) {
+                num = r[key];
+                break;
+            };
+        }
+        return callback(null, num);
+    });
+}
+
 function findAll(model, options, tx, callback) {
     var parsed = parseFindOptions(model, options, false);
     var
@@ -244,6 +275,16 @@ function BaseModel(warpObject) {
             tx = undefined;
         }
         find(this, id, tx, callback);
+    };
+    this.findNumber = function(options, tx, callback) {
+        if (! this.__isModel) {
+            throw new Error('Cannot invoke findAll() on instance: ' + this);
+        }
+        if (arguments.length===2) {
+            callback = tx;
+            tx = undefined;
+        }
+        findNumber(this, options, tx, callback);
     };
     this.findAll = function(options, tx, callback) {
         if (! this.__isModel) {
@@ -496,6 +537,41 @@ Warp.prototype.update = function(sql, params, tx, callback) {
 };
 
 Warp.prototype.query = Warp.prototype.update;
+
+Warp.prototype.queryNumber = function(sql, params, tx, callback) {
+    if (arguments.length===2) {
+        callback = params;
+        tx = undefined;
+        params = [];
+    }
+    else if (arguments.length===3) {
+        if (Array.isArray(params)) {
+            callback = tx;
+            tx = undefined;
+        }
+        else {
+            callback = tx;
+            tx = params;
+            params = [];
+        }
+    }
+    return smartRunSQL(this.__pool, sql, params, tx, function(err, results) {
+        if (err) {
+            return callback(err);
+        }
+        if (! Array.isArray(results)) {
+            return callback(new Error('No record returned.'));
+        }
+        var num, r = results[0];
+        for (var key in r) {
+            if (r.hasOwnProperty(key)) {
+                num = r[key];
+                break;
+            }
+        }
+        return callback(null, num);
+    });
+}
 
 var warp = {
     create: function(params) {
