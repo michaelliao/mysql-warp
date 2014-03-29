@@ -193,8 +193,8 @@ function find(model, id, tx, callback) {
 function save(instance, tx, callback) {
     var
         model = instance.__model,
-        preInsert = model.__preInsert;
-    preInsert && preInsert(instance);
+        beforeCreate = model.__beforeCreate;
+    beforeCreate && beforeCreate(instance);
     // insert into TABLE () values (???)
     var params = _.map(model.__insertAttributesArray, function(attr) {
         if (instance.hasOwnProperty(attr)) {
@@ -225,8 +225,8 @@ function save(instance, tx, callback) {
 function update(instance, array, tx, callback) {
     var
         model = instance.__model,
-        preUpdate = model.__preUpdate;
-    preUpdate && preUpdate(instance);
+        beforeUpdate = model.__beforeUpdate;
+    beforeUpdate && beforeUpdate(instance);
 
     var updates, params;
     if (! array) {
@@ -338,15 +338,54 @@ function BaseModel(warpObject) {
         }
         findAll(this, options, tx, callback);
     };
-    this.save = function(tx, callback) {
-        if (this.__isModel) {
-            throw new Error('Cannot invoke save() on model: ' + this);
-        }
+    this.save = function(arg1, arg2, arg3) {
+        // args: data, tx, callback:
+        var data, tx, callback;
         if (arguments.length===1) {
-            callback = tx;
-            tx = undefined;
+            // instance.save(callback):
+            if (this.__isModel) {
+                throw new Error('Missing data when invoke save() on model: ' + this);
+            }
+            callback = arg1;
+            save(this, undefined, callback);
+            return this; // return instance itself
         }
-        save(this, tx, callback);
+        if (arguments.length===2) {
+            if (arg1.__isTx) {
+                // instance.save(tx, callback):
+                if (this.__isModel) {
+                    throw new Error('Missing data when invoke save() on model: ' + this);
+                }
+                tx = arg1;
+                callback = arg2;
+                save(this, tx, callback);
+                return this; // return instance itself
+            }
+            else {
+                // Model.save(data, callback):
+                if (! this.__isModel) {
+                    throw new Error('Cannot invoke save() on instance with data: ' + this);
+                }
+                data = arg1;
+                callback = arg2;
+                console.log('>>>>' + this.__model);
+                console.log('>>>>' + this.__model);
+                console.log('>>>>' + this.__model);
+                console.log('>>>>' + this.__model);
+                console.log('>>>>' + this.__model);
+                console.log('>>>>' + this.__model);
+                console.log('>>>>' + this.__model);
+                return save(this.build(data), undefined, callback);
+            }
+        }
+        // Model(data, tx, callback):
+        if (! this.__isModel) {
+            throw new Error('Cannot invoke save() on instance with data: ' + this);
+        }
+        data = arg1;
+        tx = arg2;
+        callback = arg3;
+        return save(this.build(data), tx, callback);
     };
     this.update = function(array, tx, callback) {
         if (this.__isModel) {
@@ -426,8 +465,8 @@ function createSubModel(baseModel, definitions) {
         this.__primaryKey = definitions.primaryKey;
         this.__fetchInsertId = definitions.fetchInsertId;
 
-        this.__preInsert = definitions.preInsert;
-        this.__preUpdate = definitions.preUpdate;
+        this.__beforeCreate = definitions.beforeCreate;
+        this.__beforeUpdate = definitions.beforeUpdate;
 
         this.__booleanKeys = definitions.booleanKeys;
 
@@ -439,8 +478,8 @@ function createSubModel(baseModel, definitions) {
             console.log('SelectAttributesArray: ' + JSON.stringify(this.__selectAttributesArray));
             console.log('InsertAttributesArray: ' + JSON.stringify(this.__insertAttributesArray));
             console.log('UpdateAttributesArray: ' + JSON.stringify(this.__updateAttributesArray));
-            console.log('preInsert: ' + this.__preInsert);
-            console.log('preUpdate: ' + this.__preUpdate);
+            console.log('beforeCreate: ' + this.__beforeCreate);
+            console.log('beforeUpdate: ' + this.__beforeUpdate);
         };
     };
     Sub.prototype = baseModel;
@@ -536,8 +575,10 @@ Warp.prototype.transaction = function(callback) {
                 return callback(err);
             }
             log(conn, 'TRANSACTION', 'transaction began.');
+            // callback(err, txObject):
             callback(null, {
                 connection: conn,
+                __isTx: true,
                 done: function(err, fn) {
                     if (err) {
                         log(conn, 'TRANSACTION', 'rollback transaction...');

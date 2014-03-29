@@ -169,9 +169,9 @@ An example of defining a `User` model:
         }
     ], {
         table: 'users',
-        preInsert: function(obj) {
+        beforeCreate: function(obj) {
         },
-        preUpdate: function(obj) {
+        beforeUpdate: function(obj) {
         }
     });
 
@@ -197,9 +197,9 @@ You can customize the Model by `options`. Those are useful options:
 
 * `table`: table name, default to model name;
 
-* `preInsert`: a function to allow you to do some modifications on an instance before saved;
+* `beforeCreate`: a function to allow you to do some modifications on an instance before saved;
 
-* `preUpdate`: a function to allow you to do some modifications on an instance before updated;
+* `beforeUpdate`: a function to allow you to do some modifications on an instance before updated;
 
 ### Boolean value
 
@@ -225,10 +225,29 @@ To save data you have to build an instance from model by `build()` and `save()` 
     var user = User.build({
         name: 'Michael',
         score: 100
-    }).save(function(err, entity) {
+    });
+    user.save(function(err, entity) {
         // entity is the same as variable user, but some attributes are automatically set:
         // entity.id, entity.status
     });
+
+Or you can combile 2 steps into 1 step:
+
+    User.save({
+        name: 'Michael',
+        score: 100
+    }), function(err, entity) {
+        // entity is an instance of User model.
+    });
+
+Invoke `save()` on an instance will return itself:
+
+    var user = User.build({name: 'Michael'});
+    user===user.save(function(err, entity){}); // true
+
+Invoke `save()` on a model will return `undefined`:
+
+    undefined===User.save({name: 'Michael'}, function(err, entity){}); // true
 
 ## Retrieve data
 

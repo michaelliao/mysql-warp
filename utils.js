@@ -114,8 +114,8 @@ function parseModelDefinition(name, fieldConfigs, options) {
         insertAttributesNames: _.map(insertAttributesArray, function(name) {
             return '`' + name + '`';
         }).join(', '),
-        preInsert: options.preInsert || null,
-        preUpdate: options.preUpdate || null,
+        beforeCreate: options.beforeCreate || null,
+        beforeUpdate: options.beforeUpdate || null,
     };
 }
 

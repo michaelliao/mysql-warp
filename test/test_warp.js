@@ -45,10 +45,10 @@ var User = warp.define('User', [
     }
 ], {
     table: 'users',
-    preInsert: function(obj) {
+    beforeCreate: function(obj) {
         obj.created_at = obj.updated_at = Date.now();
     },
-    preUpdate: function(obj) {
+    beforeUpdate: function(obj) {
         obj.updated_at = Date.now();
     }
 });
@@ -181,6 +181,21 @@ describe('#warp', function() {
             }).save(function(err, entity) {
                 should(err).be.ok;
                 err.code.should.equal('ER_DUP_ENTRY');
+                done();
+            });
+        });
+
+        it('#save user with data', function(done) {
+            User.save({
+                id: 'x:build-and-save', // duplicate pk!
+                email: 'build-and-save@user.com'
+            }, function(err, entity) {
+                should(err).not.be.ok;
+                entity.id.should.equal('x:build-and-save');
+                entity.email.should.equal('build-and-save@user.com');
+                entity.passwd.should.equal('******');
+                entity.created_at.should.equal(entity.updated_at);
+                entity.created_at.should.approximately(Date.now(), 1000);
                 done();
             });
         });
