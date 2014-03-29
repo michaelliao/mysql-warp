@@ -13,10 +13,10 @@ The mysql-warp library provides easy access to MySQL with ORM. The library is wr
     - [Execute update](#execute-update)
 - [Models](#models)
   - [Definition](#definition)
-  - [Create table](#create-table)
+    - [Boolean value](#boolean-value)
+    - [Create table](#create-table)
   - [Save data](#save-data)
   - [Retrieve data](#retrieve-data)
-    - [Boolean value](#boolean-value)
   - [Update data](#update-data)
   - [Delete data](#delete-data)
 - [Transaction](#transaction)
@@ -201,7 +201,13 @@ You can customize the Model by `options`. Those are useful options:
 
 * `preUpdate`: a function to allow you to do some modifications on an instance before updated;
 
-## Create table
+### Boolean value
+
+Mysql does not have built-in boolean type. Type `bool` or `boolean` is just an alias of `tinyint(1)`. If you want to retrieve a boolean value (true, false or null if allowNull is true) instead of a number (1 or 0), you must specify `type: boolean` or `type: bool` in model definition.
+
+NOTE boolean value conversion only works in model. Raw query will still get number value.
+
+### Create table
 
 If your mysql database is empty, you have to create table first before model works. However, you do not need to write `create table ...` by yourself. Instead, you can get the generated SQL from `ddl()` method:
 
@@ -242,12 +248,6 @@ To find a single element in the database, use `find()` method on model:
             }
         }
     });
-
-### Boolean value
-
-Mysql does not have built-in boolean type. Type `bool` or `boolean` is just an alias of `tinyint(1)`. If you want to retrieve a boolean value (true, false or null if allowNull is true) instead of a number (1 or 0), you must specify `type: boolean` or `type: bool` in model definition.
-
-NOTE boolean value conversion only works in model. Raw query will still get number value.
 
 Passing a number or string to find will find by primary key. You can also specify a complex find by options:
 
