@@ -426,22 +426,24 @@ describe('#warp', function() {
             });
         });
 
-        it('#test bool', function(done) {
+        it('#test bool and unicode', function(done) {
             Setting.build({
                 id: 's-123',
                 active: true,
-                key: 'warp-enabled',
-                value: 'yes'
+                key: 'unicode-enabled',
+                value: '\u4e2d\u6587'
             }).save(function(err, result) {
                 should(err).not.be.ok;
                 should(result.active===true).be.ok;
                 // query:
                 Setting.find('s-123', function(err, r) {
                     should(r.active===true).be.ok;
+                    r.value.should.equal('\u4e2d\u6587');
                     done();
                 });
             });
         });
+
     });
 
 });
