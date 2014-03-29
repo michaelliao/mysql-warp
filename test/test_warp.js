@@ -83,13 +83,39 @@ var Food = warp.define('Food', [
     table: 'foods',
 });
 
+var Setting = warp.define('Setting', [
+    {
+        name: 'id',
+        type: 'varchar(50)',
+        primaryKey: true
+    },
+    {
+        name: 'active',
+        type: 'boolean',
+        allowNull: true
+    },
+    {
+        name: 'key',
+        type: 'varchar(50)',
+        unique: true
+    },
+    {
+        name: 'value',
+        type: 'varchar(50)'
+    }
+], {
+    table: 'settings'
+});
+
 Food.inspect();
 
 var SETUP_SQLS = [
     'drop table if exists users',
     'drop table if exists foods',
+    'drop table if exists settings',
     'create table users (id varchar(50) not null primary key, email varchar(100) not null, passwd varchar(20) not null, created_at bigint not null, updated_at bigint not null)',
     'create table foods (id bigint not null primary key auto_increment, name varchar(50) not null, price float not null, created_at bigint not null, extra varchar(10))',
+    'create table settings (id varchar(50) not null primary key, active boolean null, `key` varchar(50) not null unique, value varchar(50) not null)',
 ];
 
 describe('#warp', function() {
@@ -396,6 +422,23 @@ describe('#warp', function() {
                             });
                         });
                     });
+                });
+            });
+        });
+
+        it('#test bool', function(done) {
+            Setting.build({
+                id: 's-123',
+                active: true,
+                key: 'warp-enabled',
+                value: 'yes'
+            }).save(function(err, result) {
+                should(err).not.be.ok;
+                should(result.active===true).be.ok;
+                // query:
+                Setting.find('s-123', function(err, r) {
+                    should(r.active===true).be.ok;
+                    done();
                 });
             });
         });

@@ -31,10 +31,12 @@ function createPlaceholders(length) {
 function parseColumnDefinition(options) {
     var
         name = options.name,
-        type = options.type,
+        type = options.type.toLowerCase(),
         primaryKey = options.primaryKey ? true: false,
         autoIncrement = primaryKey && (options.autoIncrement ? true: false),
         allowNull = options.allowNull ? true: false,
+        index = options.index ? true: false,
+        unique = options.unique ? true: false,
         defaultValue = options.defaultValue,
         validate = options.validate;
     var defaultValueIsFunction = typeof(defaultValue)==='function';
@@ -44,9 +46,12 @@ function parseColumnDefinition(options) {
     return {
         name: name,
         type: type,
+        booleanType: type==='bool' || type==='boolean',
         primaryKey: primaryKey,
         autoIncrement: autoIncrement,
         allowNull: allowNull,
+        index: index,
+        unique: unique,
         defaultValue: defaultValue,
         validate: validate,
         defaultValueIsFunction: defaultValueIsFunction
@@ -89,10 +94,15 @@ function parseModelDefinition(name, fieldConfigs, options) {
     }), function(c) {
         return c.name;
     });
+    var booleanKeys = {};
+    _.each(columns, function(c) {
+        booleanKeys[c.name] = c.booleanType;
+    });
     return {
         name: name,
         table: options && options.table || name,
         primaryKey: primaryKey,
+        booleanKeys: booleanKeys,
         fetchInsertId: fetchInsertId,
         attributes: attributes,
         selectAttributesArray: selectAttributesArray,

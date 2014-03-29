@@ -265,12 +265,11 @@ function destroy(instance, tx, callback) {
 function ddl(table, attributes) {
     var sql = 'create table `' + table + '` (\n';
     var pk = null;
+    var uniques = [];
     var indics = [];
     _.each(attributes, function(attr, name) {
         var col = '  `' + name + '` ' + (attr.type || 'varchar(255)');
-        if (attr.allowNull) {
-            col = col + ' not null';
-        }
+        col = col + (attr.allowNull ? ' null' : ' not null');
         if (attr.primaryKey) {
             pk = name;
             if (attr.autoIncrement) {
@@ -278,20 +277,19 @@ function ddl(table, attributes) {
             }
         }
         else {
-            if (attr.unique) {
-                col = col + ' unique';
-            }
-            if (attr.index) {
-                indics.push(name);
-            }
+            attr.unique && uniques.push(name);
+            (attr.index && ! attr.unique) && indics.push(name);
         }
         col = col + ',\n';
         sql = sql + col;
     });
-    sql = sql + '  primary key (`' + pk + '`),\n';
     _.each(indics, function(idx) {
-        sql = sql + '  key `idx_' + idx + '` (`' + idx + '`)\n';
+        sql = sql + '  key `idx_' + idx + '` (`' + idx + '`),\n';
     });
+    _.each(uniques, function(idx) {
+        sql = sql + '  unique key `idx_' + idx + '` (`' + idx + '`),\n';
+    });
+    sql = sql + '  primary key (`' + pk + '`)\n';
     sql = sql + ') engine=innodb default charset=utf8;\n';
     return sql;
 }
@@ -431,6 +429,8 @@ function createSubModel(baseModel, definitions) {
         this.__preInsert = definitions.preInsert;
         this.__preUpdate = definitions.preUpdate;
 
+        this.__booleanKeys = definitions.booleanKeys;
+
         this.inspect = function() {
             console.log('Model: ' + this.__name);
             console.log('Table: ' + this.__table);
@@ -465,7 +465,12 @@ function Warp(pool) {
 
         _.each(attrs, function(v, k) {
             if (k.indexOf('__')!==0) {
-                that[k] = v;
+                if (v!==null && subModel.__booleanKeys[k]) {
+                    that[k] = v ? true: false;
+                }
+                else {
+                    that[k] = v;
+                }
             }
         });
         console.log('Create instance of ' + this.__model + ' done.');
