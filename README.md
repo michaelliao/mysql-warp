@@ -5,21 +5,21 @@ The mysql-warp library provides easy access to MySQL with ORM. The library is wr
 
 # Index
 
-- [Installation](installation)
-- [Usage](usage)
-  - [Basic usage](basic-usage)
-  - [Executing raw queries](executing-raw-queries)
-    - [Query for count](query-for-count)
-    - [Execute update](execute-update)
-- [Models](models)
-  - [Definition](definition)
-  - [Create table](create-table)
-  - [Save data](save-data)
-  - [Retrieve data](retrieve-data)
-  - [Update data](update-data)
-  - [Delete data](delete-data)
-- [Transaction](transaction)
-- [Q & A](q--a)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Basic usage](#basic-usage)
+  - [Executing raw queries](#executing-raw-queries)
+    - [Query for count](#query-for-count)
+    - [Execute update](#execute-update)
+- [Models](#models)
+  - [Definition](#definition)
+  - [Create table](#create-table)
+  - [Save data](#save-data)
+  - [Retrieve data](#retrieve-data)
+  - [Update data](#update-data)
+  - [Delete data](#delete-data)
+- [Transaction](#transaction)
+- [Q & A](#q--a)
 
 # Installation
 
