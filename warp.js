@@ -261,11 +261,55 @@ function destroy(instance, tx, callback) {
     });
 }
 
+// generate DDL:
+function ddl(table, attributes) {
+    var sql = 'create table `' + table + '` (\n';
+    var pk = null;
+    var indics = [];
+    _.each(attributes, function(attr, name) {
+        var col = '  `' + name + '` ' + (attr.type || 'varchar(255)');
+        if (attr.allowNull) {
+            col = col + ' not null';
+        }
+        if (attr.primaryKey) {
+            pk = name;
+            if (attr.autoIncrement) {
+                col = col + ' auto_increment';
+            }
+        }
+        else {
+            if (attr.unique) {
+                col = col + ' unique';
+            }
+            if (attr.index) {
+                indics.push(name);
+            }
+        }
+        col = col + ',\n';
+        sql = sql + col;
+    });
+    sql = sql + '  primary key (`' + pk + '`),\n';
+    _.each(indics, function(idx) {
+        sql = sql + '  key `idx_' + idx + '` (`' + idx + '`)\n';
+    });
+    sql = sql + ') engine=innodb default charset=utf8\n';
+    return sql;
+}
+
 function BaseModel(warpObject) {
     this.__isModel = true;
     this.__name = '__BaseModel__';
     this.__warp = warpObject;
     this.__pool = warpObject.__pool;
+    this.ddl = function() {
+        if (! this.__isModel) {
+            throw new Error('Cannot invoke find() on instance: ' + this);
+        }
+        if (this.__name==='__BaseModel__') {
+            throw new Error('Cannot invoke find() on BaseModel: ' + this);
+        }
+        return ddl(this.__table, this.__attributes);
+    }
     this.find = function(id, tx, callback) {
         if (! this.__isModel) {
             throw new Error('Cannot invoke find() on instance: ' + this);
