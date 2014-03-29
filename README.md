@@ -3,6 +3,24 @@ mysql-warp
 
 The mysql-warp library provides easy access to MySQL with ORM. The library is written in pure JavaScript and can be used in the Node.JS environment.
 
+# Index
+
+- [Installation](installation)
+- [Usage](usage)
+  - [Basic usage](basic-usage)
+  - [Executing raw queries](executing-raw-queries)
+    - [Query for count](query-for-count)
+    - [Execute update](execute-update)
+- [Models](models)
+  - [Definition](definition)
+  - [Create table](create-table)
+  - [Save data](save-data)
+  - [Retrieve data](retrieve-data)
+  - [Update data](update-data)
+  - [Delete data](delete-data)
+- [Transaction](transaction)
+- [Q & A](q--a)
+
 # Installation
 
 You can install mysql-warp via NPM:
@@ -27,7 +45,7 @@ To get the ball rollin' you first have to create an instance of warp. Use it the
         database: 'warp'
     });
 
-You should set at lease the 4 options above. For more options please refer [https://github.com/felixge/node-mysql/blob/master/Readme.md#connection-options]. And please NOTE the default `charset` is set to `UTF8_GENERAL_CI`, so make sure your mysql server has configured using charset of UTF8.
+You should set at lease the 4 options above. For more options please refer [mysql connection options](https://github.com/felixge/node-mysql/blob/master/Readme.md#connection-options). And please NOTE the default `charset` is set to `UTF8_GENERAL_CI`, so make sure your mysql server has configured using charset of UTF8.
 
 You may find those options are useful:
 
@@ -37,7 +55,7 @@ You may find those options are useful:
 
 * `queueLimit`: The maximum number of connection requests the pool will queue before returning an error from getConnection. If set to 0, there is no limit to the number of queued connection requests. (Default: 0)
 
-## Executing raw SQL queries
+## Executing raw queries
 
 You can use warp object to execute any raw SQL queries.
 
@@ -112,6 +130,8 @@ If you feel `update()` is better, you can use `warp.update()`. In fact, `warp.up
     warp.query===warp.update; // true
 
 # Models
+
+A model is an object that has mappings to a table. Operations on a model or model instance will execute auto-generated SQL on the table. 
 
 ## Definition
 
