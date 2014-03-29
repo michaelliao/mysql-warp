@@ -292,7 +292,7 @@ function ddl(table, attributes) {
     _.each(indics, function(idx) {
         sql = sql + '  key `idx_' + idx + '` (`' + idx + '`)\n';
     });
-    sql = sql + ') engine=innodb default charset=utf8\n';
+    sql = sql + ') engine=innodb default charset=utf8;\n';
     return sql;
 }
 

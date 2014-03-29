@@ -180,6 +180,17 @@ You can customize the Model by `options`. Those are useful options:
 
 * `preUpdate`: a function to allow you to do some modifications on an instance before updated;
 
+## Create table
+
+If your mysql database is empty, you have to create table first before model works. However, you do not need to write `create table ...` by yourself. Instead, you can get the generated SQL from `ddl()` method:
+
+    console.log(User.ddl());
+    // create table `users` (...);
+
+Copy the generated SQL to mysql client and execute it.
+
+Please note if you change your model you may have to make a schema change (using `alter table ...`) by yourself.
+
 ## Save data
 
 To save data you have to build an instance from model by `build()` and `save()` methods:
