@@ -107,8 +107,6 @@ var Setting = warp.define('Setting', [
     table: 'settings'
 });
 
-Food.inspect();
-
 var SETUP_SQLS = [
     'drop table if exists users',
     'drop table if exists foods',
@@ -255,6 +253,21 @@ describe('#warp', function() {
                         num.should.equal(10);
                         done();
                     });
+                });
+            });
+        });
+
+        it('#find users by findAll', function(done) {
+            User.findAll(function(err, entities) {
+                should(err).not.be.ok;
+                entities.should.be.an.array;
+                entities.should.have.lengthOf(103);
+                User.findNumber({
+                    select: 'count(*)'
+                }, function(err, num) {
+                    should(err).not.be.ok;
+                    num.should.equal(103);
+                    done();
                 });
             });
         });

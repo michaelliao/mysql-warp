@@ -74,16 +74,17 @@ function smartRunSQL(pool, sql, params, tx, callback) {
 }
 */
 function parseFindOptions(model, options, expectSingleResult) {
-    var select = (Array.isArray(options.select) ? _.map(options.select, function(f) {
-        return '`' + f + '`';
-    }).join(', ') : options.select) || model.__selectAttributesNames;
+    var select = options.select ?
+        (Array.isArray(options.select)
+            ? _.map(options.select, function(f) {
+                return '`' + f + '`';
+            }).join(', ')
+            : options.select)
+            : model.__selectAttributesNames;
 
-    var where = options.where;
+    var where = options.where || '';
     var params = options.params || [];
 
-    if ( ! where || typeof(where)!=='string') {
-        throw new Error('Must specify \'where\' in options.');
-    }
     if (options.order) {
         where = where + ' order by ' + options.order;
     }
@@ -121,7 +122,9 @@ function findNumber(model, options, tx, callback) {
         select = parsed.select,
         where = parsed.where,
         params = parsed.params;
-    var sql = utils.format('select %s from `%s` where %s', select, model.__table, where);
+    var sql = where ?
+        utils.format('select %s from `%s` where %s', select, model.__table, where) :
+        utils.format('select %s from `%s`', select, model.__table);
     smartRunSQL(model.__pool, sql, params, tx, function(err, results) {
         if (err) {
             return callback(err);
@@ -149,7 +152,9 @@ function findAll(model, options, tx, callback) {
         select = parsed.select,
         where = parsed.where,
         params = parsed.params;
-    var sql = utils.format('select %s from `%s` where %s', select, model.__table, where);
+    var sql = where ?
+        utils.format('select %s from `%s` where %s', select, model.__table, where) :
+        utils.format('select %s from `%s`', select, model.__table);
     smartRunSQL(model.__pool, sql, params, tx, function(err, results) {
         if (err) {
             return callback(err);
@@ -336,6 +341,11 @@ function BaseModel(warpObject) {
             callback = tx;
             tx = undefined;
         }
+        if (arguments.length===1) {
+            callback = options;
+            options = {};
+            tx = undefined;
+        }
         findAll(this, options, tx, callback);
     };
     this.save = function(arg1, arg2, arg3) {
@@ -368,13 +378,6 @@ function BaseModel(warpObject) {
                 }
                 data = arg1;
                 callback = arg2;
-                console.log('>>>>' + this.__model);
-                console.log('>>>>' + this.__model);
-                console.log('>>>>' + this.__model);
-                console.log('>>>>' + this.__model);
-                console.log('>>>>' + this.__model);
-                console.log('>>>>' + this.__model);
-                console.log('>>>>' + this.__model);
                 return save(this.build(data), undefined, callback);
             }
         }
@@ -429,7 +432,6 @@ function BaseModel(warpObject) {
         if (! this.__isModel) {
             throw new Error('Cannot build instance on instance.');
         }
-        console.log('Build instance on ' + this + '...');
         return this.__warp.__createInstance(this, attrs);
     };
     this.toJSON = function() {
@@ -470,7 +472,7 @@ function createSubModel(baseModel, definitions) {
 
         this.__booleanKeys = definitions.booleanKeys;
 
-        this.inspect = function() {
+        this.__inspect = function() {
             console.log('Model: ' + this.__name);
             console.log('Table: ' + this.__table);
             console.log('Attributes: ' + JSON.stringify(this.__attributes, undefined, '  '));
@@ -513,7 +515,6 @@ function Warp(pool) {
             }
         });
         console.log('Create instance of ' + this.__model + ' done.');
-        
     };
     Instance.prototype = this.__model;
     Instance.prototype.constructor = Instance;
