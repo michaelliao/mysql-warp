@@ -12,7 +12,7 @@ var warp = Warp.create({
     host: 'localhost',
     user: 'www',
     password: 'www',
-    database: 'itranswarp'
+    database: 'warp'
 });
 
 var User = warp.define('User', [
@@ -113,14 +113,12 @@ var SETUP_SQLS = [
     'drop table if exists users',
     'drop table if exists foods',
     'drop table if exists settings',
-    'create table users (id varchar(50) not null primary key, email varchar(100) not null, passwd varchar(20) not null, created_at bigint not null, updated_at bigint not null)',
-    'create table foods (id bigint not null primary key auto_increment, name varchar(50) not null, price float not null, created_at bigint not null, extra varchar(10))',
-    'create table settings (id varchar(50) not null primary key, active boolean null, `key` varchar(50) not null unique, value varchar(50) not null)',
+    'create table users (id varchar(50) not null primary key, email varchar(100) not null, passwd varchar(20) not null, created_at bigint not null, updated_at bigint not null) engine=innodb',
+    'create table foods (id bigint not null primary key auto_increment, name varchar(50) not null, price float not null, created_at bigint not null, extra varchar(10)) engine=innodb',
+    'create table settings (id varchar(50) not null primary key, active boolean null, `key` varchar(50) not null unique, value varchar(50) not null) engine=innodb',
 ];
 
 describe('#warp', function() {
-
-    var Warp;
 
     before(function(done) {
         var tasks = _.map(SETUP_SQLS, function(sql) {
