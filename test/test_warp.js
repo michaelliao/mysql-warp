@@ -258,7 +258,7 @@ describe('#warp', function() {
         });
 
         it('#find users by findAll', function(done) {
-            User.findAll(function(err, entities) {
+            User.findAll({ order: 'email' }, function(err, entities) {
                 should(err).not.be.ok;
                 entities.should.be.an.array;
                 entities.should.have.lengthOf(103);

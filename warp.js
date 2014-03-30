@@ -84,9 +84,10 @@ function parseFindOptions(model, options, expectSingleResult) {
 
     var where = options.where || '';
     var params = options.params || [];
+    var append = '';
 
     if (options.order) {
-        where = where + ' order by ' + options.order;
+        append = append + ' order by ' + options.order;
     }
     var limit = options.limit;
     var offset = options.offset;
@@ -96,20 +97,21 @@ function parseFindOptions(model, options, expectSingleResult) {
     }
 
     if (limit && offset) {
-        where = where + ' limit ' + offset + ',' + limit;
+        append = append + ' limit ' + offset + ',' + limit;
     }
     else {
         if (limit) {
-            where = where + ' limit ' + limit;
+            append = append + ' limit ' + limit;
         }
         if (offset) {
-            where = where + ' limit ' + offset + ',2147483647';
+            append = append + ' limit ' + offset + ',2147483647';
         }
     }
     return {
         select: select,
         where: where,
-        params: params
+        params: params,
+        append: append
     };
 }
 
@@ -121,10 +123,11 @@ function findNumber(model, options, tx, callback) {
     var
         select = parsed.select,
         where = parsed.where,
+        append = parsed.append,
         params = parsed.params;
     var sql = where ?
-        utils.format('select %s from `%s` where %s', select, model.__table, where) :
-        utils.format('select %s from `%s`', select, model.__table);
+        utils.format('select %s from `%s` where %s %s', select, model.__table, where, append) :
+        utils.format('select %s from `%s` %s', select, model.__table, append);
     smartRunSQL(model.__pool, sql, params, tx, function(err, results) {
         if (err) {
             return callback(err);
@@ -151,10 +154,11 @@ function findAll(model, options, tx, callback) {
     var
         select = parsed.select,
         where = parsed.where,
+        append = parsed.append,
         params = parsed.params;
     var sql = where ?
-        utils.format('select %s from `%s` where %s', select, model.__table, where) :
-        utils.format('select %s from `%s`', select, model.__table);
+        utils.format('select %s from `%s` where %s %s', select, model.__table, where, append) :
+        utils.format('select %s from `%s` %s', select, model.__table, append);
     smartRunSQL(model.__pool, sql, params, tx, function(err, results) {
         if (err) {
             return callback(err);
@@ -167,22 +171,24 @@ function findAll(model, options, tx, callback) {
 
 // find one and only one results by id or options:
 function find(model, id, tx, callback) {
-    var select, where, params;
+    var select, where, append, params;
     var complexFind = typeof(id)==='object';
     if (complexFind) {
         var parsed = parseFindOptions(model, id, true);
 
         select = parsed.select;
         where = parsed.where;
+        append = parsed.append;
         params = parsed.params;
     }
     else {
         // by primary key:
         select = model.__selectAttributesNames;
         where = '`' + model.__primaryKey + '`=?';
+        append = '';
         params = [id];
     }
-    var sql = utils.format('select %s from `%s` where %s', select, model.__table, where);
+    var sql = utils.format('select %s from `%s` where %s %s', select, model.__table, where, append);
     smartRunSQL(model.__pool, sql, params, tx, function(err, results) {
         if (err) {
             return callback(err);
