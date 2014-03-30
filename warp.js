@@ -337,6 +337,12 @@ function BaseModel(warpObject) {
             callback = tx;
             tx = undefined;
         }
+        if (typeof(options)==='string') {
+            var select = options;
+            options = {
+                select: select
+            };
+        }
         findNumber(this, options, tx, callback);
     };
     this.findAll = function(options, tx, callback) {

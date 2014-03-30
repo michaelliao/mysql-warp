@@ -131,6 +131,14 @@ describe('#warp', function() {
 
     describe('#warp', function() {
 
+        it('#findNumber with null', function(done) {
+            Food.findNumber('max(price)', function(err, num) {
+                should(err).not.be.ok;
+                should(num===null).be.ok;
+                done();
+            });
+        });
+
         it('#save update user ok', function(done) {
             User.build({
                 id: 'save-12345',
