@@ -403,3 +403,11 @@ Don't forget pass tx object in each transactional operations, otherwise a new co
 Q: Does mysql-warp support one-to-many, many-to-many releationships?
 
 A: No. mysql-warp is a thin wrapper for table-object mapping which makes it very fast and all SQLs are totally under your control.
+
+Q: Can I define multiple primary keys?
+
+A: No. Error occurs if multiple primary keys found.
+
+Q: Can I mapping a field name to a different name on model?
+
+A: No you can't.
