@@ -36,7 +36,7 @@ Or get the latest source code from GitHub:
 
 ## Basic usage
 
-To get the ball rollin' you first have to create an instance of warp. Use it the folowing way:
+To get the ball rollin' you first have to create an instance of warp. Use it the following way:
 
     var Warp = require('mysql-warp');
     var warp = Warp.create({
@@ -132,7 +132,7 @@ If you feel `update()` is better, you can use `warp.update()`. In fact, `warp.up
 
 # Models
 
-A model is an object that has mappings to a table. Operations on a model or model instance will execute auto-generated SQL on the table. 
+A model is an object that keeps mappings of JavaScript object with a table. Operations on a model or model instance will execute auto-generated SQL.
 
 ## Definition
 
