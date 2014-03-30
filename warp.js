@@ -663,7 +663,7 @@ Warp.prototype.queryNumber = function(sql, params, tx, callback) {
     });
 }
 
-var warp = {
+var theWarp = {
     create: function(params) {
         var checkRequiredParams = function(name) {
             if ( ! name in params) {
@@ -679,4 +679,4 @@ var warp = {
     },
 };
 
-exports = module.exports = warp;
+exports = module.exports = theWarp;
