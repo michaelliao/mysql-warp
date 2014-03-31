@@ -200,8 +200,8 @@ function find(model, id, tx, callback) {
     });
 }
 
-// save an instance data:
-function save(instance, tx, callback) {
+// create an instance data:
+function create(instance, tx, callback) {
     var
         model = instance.__model,
         beforeCreate = model.__beforeCreate;
@@ -360,47 +360,47 @@ function BaseModel(warpObject) {
         }
         findAll(this, options, tx, callback);
     };
-    this.save = function(arg1, arg2, arg3) {
+    this.create = function(arg1, arg2, arg3) {
         // args: data, tx, callback:
         var data, tx, callback;
         if (arguments.length===1) {
-            // instance.save(callback):
+            // instance.create(callback):
             if (this.__isModel) {
-                throw new Error('Missing data when invoke save() on model: ' + this);
+                throw new Error('Missing data when invoke create() on model: ' + this);
             }
             callback = arg1;
-            save(this, undefined, callback);
+            create(this, undefined, callback);
             return this; // return instance itself
         }
         if (arguments.length===2) {
             if (arg1.__isTx) {
-                // instance.save(tx, callback):
+                // instance.create(tx, callback):
                 if (this.__isModel) {
-                    throw new Error('Missing data when invoke save() on model: ' + this);
+                    throw new Error('Missing data when invoke create() on model: ' + this);
                 }
                 tx = arg1;
                 callback = arg2;
-                save(this, tx, callback);
+                create(this, tx, callback);
                 return this; // return instance itself
             }
             else {
-                // Model.save(data, callback):
+                // Model.create(data, callback):
                 if (! this.__isModel) {
-                    throw new Error('Cannot invoke save() on instance with data: ' + this);
+                    throw new Error('Cannot invoke create() on instance with data: ' + this);
                 }
                 data = arg1;
                 callback = arg2;
-                return save(this.build(data), undefined, callback);
+                return create(this.build(data), undefined, callback);
             }
         }
         // Model(data, tx, callback):
         if (! this.__isModel) {
-            throw new Error('Cannot invoke save() on instance with data: ' + this);
+            throw new Error('Cannot invoke create() on instance with data: ' + this);
         }
         data = arg1;
         tx = arg2;
         callback = arg3;
-        return save(this.build(data), tx, callback);
+        return create(this.build(data), tx, callback);
     };
     this.update = function(array, tx, callback) {
         if (this.__isModel) {

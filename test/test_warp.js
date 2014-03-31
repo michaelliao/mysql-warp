@@ -139,12 +139,12 @@ describe('#warp', function() {
             });
         });
 
-        it('#save update user ok', function(done) {
+        it('#create update user ok', function(done) {
             User.build({
                 id: 'save-12345',
                 email: 'save@user.com',
                 // passwd: default to '******'
-            }).save(function(err, entity) {
+            }).create(function(err, entity) {
                 should(err).not.be.ok;
                 entity.id.should.equal('save-12345');
                 entity.email.should.equal('save@user.com');
@@ -177,20 +177,20 @@ describe('#warp', function() {
             });
         });
 
-        it('#save user failed', function(done) {
+        it('#create user failed', function(done) {
             User.build({
                 id: 'save-12345', // duplicate pk!
                 email: 'dup@user.com',
                 passwd: 'cannot-save'
-            }).save(function(err, entity) {
+            }).create(function(err, entity) {
                 should(err).be.ok;
                 err.code.should.equal('ER_DUP_ENTRY');
                 done();
             });
         });
 
-        it('#save user with data', function(done) {
-            User.save({
+        it('#create user with data', function(done) {
+            User.create({
                 id: 'x:build-and-save', // duplicate pk!
                 email: 'build-and-save@user.com'
             }, function(err, entity) {
@@ -209,7 +209,7 @@ describe('#warp', function() {
                 id: 'find-98765',
                 email: 'findme@user.com',
                 passwd: 'finding...'
-            }).save(function(err, entity) {
+            }).create(function(err, entity) {
                 should(err).not.be.ok;
                 User.find('find-98765', function(err, entity) {
                     should(err).not.be.ok;
@@ -236,7 +236,7 @@ describe('#warp', function() {
                         id: 'num-' + i,
                         email: 'aaa@' + i + '.com',
                         passwd: 'passwd-' + i
-                    }).save(callback);
+                    }).create(callback);
                 };
             });
             async.series(tasks, function(err, result) {
@@ -285,7 +285,7 @@ describe('#warp', function() {
                 id: 'find-007',
                 email: 'x007@007.mil',
                 passwd: 'double0-7'
-            }).save(function(err, ori) {
+            }).create(function(err, ori) {
                 should(err).not.be.ok;
                 User.find({
                     select: ['id', 'email'],
@@ -309,7 +309,7 @@ describe('#warp', function() {
             Food.build({
                 name: 'apple',
                 price: 8.8
-            }).save(function(err, result) {
+            }).create(function(err, result) {
                 should(err).not.be.ok;
                 result.id.should.equal(1);
                 result.name.should.equal('apple');
@@ -319,7 +319,7 @@ describe('#warp', function() {
                 Food.build({
                     name: 'apple-2',
                     extra: 'APPL'
-                }).save(function(err, r2) {
+                }).create(function(err, r2) {
                     should(err).not.be.ok;
                     r2.id.should.equal(2);
                     r2.name.should.equal('apple-2');
@@ -343,7 +343,7 @@ describe('#warp', function() {
                         name: 'food-no-' + i,
                         price: 0.1 + 1.5 * i,
                         extra: 'Apple Inc.'
-                    }).save(callback);
+                    }).create(callback);
                 };
             });
             async.series(tasks, function(err, results) {
@@ -375,7 +375,7 @@ describe('#warp', function() {
                         name: 'yummy-' + i,
                         price: 10 + 10 * i,
                         extra: 'yummy'
-                    }).save(callback);
+                    }).create(callback);
                 };
             });
             async.series(tasks, function(err, results) {
@@ -414,7 +414,7 @@ describe('#warp', function() {
                 name: 'bad-food',
                 price: 8.8,
                 extra: 'rollback'
-            }).save(function(err, result) {
+            }).create(function(err, result) {
                 should(err).not.be.ok;
                 // try update, insert in a transaction:
                 warp.transaction(function(err, tx) {
@@ -438,7 +438,7 @@ describe('#warp', function() {
                                 id: 'invalid-123',
                                 email: 'invalid@email.com',
                                 passwd: null // will cause rollback!
-                            }).save(tx, callback);
+                            }).create(tx, callback);
                         }
                     ], function(err, result) {
                         tx.done(err, function(err) {
@@ -466,7 +466,7 @@ describe('#warp', function() {
                 active: true,
                 key: 'unicode-enabled',
                 value: '\u4e2d\u6587'
-            }).save(function(err, result) {
+            }).create(function(err, result) {
                 should(err).not.be.ok;
                 should(result.active===true).be.ok;
                 // query:
