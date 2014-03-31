@@ -447,9 +447,13 @@ function BaseModel(warpObject) {
         return this.__warp.__createInstance(this, attrs);
     };
     this.toJSON = function() {
-        return _.filter(this, function(v, k) {
-            return k.indexOf('__')!==0;
+        var j = {};
+        _.forOwn(this, function(v, k) {
+            if (k.indexOf('__')!==0) {
+                j[k] = v;
+            }
         });
+        return j;
     };
     this.toString = function() {
         if (this.__isModel) {

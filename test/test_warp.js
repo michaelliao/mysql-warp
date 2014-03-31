@@ -146,6 +146,9 @@ describe('#warp', function() {
                 // passwd: default to '******'
             }).create(function(err, entity) {
                 should(err).not.be.ok;
+                var j = JSON.stringify(entity);
+                should(j.indexOf('{')===0).be.ok;
+                should(j.indexOf('\"id\":\"save-12345\"')>0).be.ok;
                 entity.id.should.equal('save-12345');
                 entity.email.should.equal('save@user.com');
                 entity.passwd.should.equal('******');
