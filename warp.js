@@ -117,7 +117,7 @@ function parseFindOptions(model, options, expectSingleResult) {
 
 function findNumber(model, options, tx, callback) {
     if (typeof(options.select)!=='string') {
-        throw new Error('You need specify select as string like \'count(*)\'.');
+        return callback(new Error('You need specify select as string like \'count(*)\'.'));
     }
     var parsed = parseFindOptions(model, options, false);
     var
@@ -312,16 +312,16 @@ function BaseModel(warpObject) {
     this.__pool = warpObject.__pool;
     this.ddl = function() {
         if (! this.__isModel) {
-            throw new Error('Cannot invoke find() on instance: ' + this);
+            return callback(new Error('Cannot invoke find() on instance: ' + this));
         }
         if (this.__name==='__BaseModel__') {
-            throw new Error('Cannot invoke find() on BaseModel: ' + this);
+            return callback(new Error('Cannot invoke find() on BaseModel: ' + this));
         }
         return ddl(this.__table, this.__attributes);
     }
     this.find = function(id, tx, callback) {
         if (! this.__isModel) {
-            throw new Error('Cannot invoke find() on instance: ' + this);
+            return callback(new Error('Cannot invoke find() on instance: ' + this));
         }
         if (arguments.length===2) {
             callback = tx;
@@ -331,7 +331,7 @@ function BaseModel(warpObject) {
     };
     this.findNumber = function(options, tx, callback) {
         if (! this.__isModel) {
-            throw new Error('Cannot invoke findAll() on instance: ' + this);
+            return callback(new Error('Cannot invoke findAll() on instance: ' + this));
         }
         if (arguments.length===2) {
             callback = tx;
@@ -347,7 +347,7 @@ function BaseModel(warpObject) {
     };
     this.findAll = function(options, tx, callback) {
         if (! this.__isModel) {
-            throw new Error('Cannot invoke findAll() on instance: ' + this);
+            return callback(new Error('Cannot invoke findAll() on instance: ' + this));
         }
         if (arguments.length===2) {
             callback = tx;
@@ -366,7 +366,7 @@ function BaseModel(warpObject) {
         if (arguments.length===1) {
             // instance.create(callback):
             if (this.__isModel) {
-                throw new Error('Missing data when invoke create() on model: ' + this);
+                return callback(new Error('Missing data when invoke create() on model: ' + this));
             }
             callback = arg1;
             create(this, undefined, callback);
@@ -376,7 +376,7 @@ function BaseModel(warpObject) {
             if (arg1.__isTx) {
                 // instance.create(tx, callback):
                 if (this.__isModel) {
-                    throw new Error('Missing data when invoke create() on model: ' + this);
+                    return callback(new Error('Missing data when invoke create() on model: ' + this));
                 }
                 tx = arg1;
                 callback = arg2;
@@ -386,7 +386,7 @@ function BaseModel(warpObject) {
             else {
                 // Model.create(data, callback):
                 if (! this.__isModel) {
-                    throw new Error('Cannot invoke create() on instance with data: ' + this);
+                    return callback(new Error('Cannot invoke create() on instance with data: ' + this));
                 }
                 data = arg1;
                 callback = arg2;
@@ -395,7 +395,7 @@ function BaseModel(warpObject) {
         }
         // Model(data, tx, callback):
         if (! this.__isModel) {
-            throw new Error('Cannot invoke create() on instance with data: ' + this);
+            return callback(new Error('Cannot invoke create() on instance with data: ' + this));
         }
         data = arg1;
         tx = arg2;
@@ -404,7 +404,7 @@ function BaseModel(warpObject) {
     };
     this.update = function(array, tx, callback) {
         if (this.__isModel) {
-            throw new Error('Cannot invoke update() on model: ' + this);
+            return callback(new Error('Cannot invoke update() on model: ' + this));
         }
         if (arguments.length===1) {
             callback = array;
@@ -436,13 +436,13 @@ function BaseModel(warpObject) {
             array = updates;
         }
         if (array!==undefined && array.length===0) {
-            throw new Error('Update attributes array is empty.');
+            return callback(new Error('Update attributes array is empty.'));
         }
         update(this, array, tx, callback);
     }
     this.destroy = function(tx, callback) {
         if (this.__isModel) {
-            throw new Error('Cannot destroy model: ' + this);
+            return callback(new Error('Cannot invoke destroy() on model: ' + this));
         }
         if (arguments.length===1) {
             callback = tx;
@@ -452,10 +452,10 @@ function BaseModel(warpObject) {
     }
     this.build = function(attrs) {
         if (this.__name==='__BaseModel__') {
-            throw new Error('Cannot build instance on BaseModel.');
+            return callback(new Error('Cannot build instance on BaseModel.'));
         }
         if (! this.__isModel) {
-            throw new Error('Cannot build instance on instance.');
+            return callback(new Error('Cannot build instance on instance.'));
         }
         return this.__warp.__createInstance(this, attrs);
     };
