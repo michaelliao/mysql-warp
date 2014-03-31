@@ -15,7 +15,7 @@ The mysql-warp library provides easy access to MySQL with ORM. The library is wr
   - [Definition](#definition)
     - [Boolean value](#boolean-value)
     - [Create table](#create-table)
-  - [Save data](#save-data)
+  - [Create object](#create-object)
   - [Retrieve data](#retrieve-data)
   - [Update data](#update-data)
   - [Delete data](#delete-data)
@@ -191,13 +191,13 @@ Column definition options:
 
 * `index`: true if this column should have an index, default to false. This option is only used to generate DDL scripts;
 
-* `defaultValue`: use defaultValue on save() when attribute is not found, default to `undefined`. NOTE `undefined` is not `null`, and you can set defaultValue to `null`. You can also set defaultValue to a function to evaluate the defaultValue in the runtime, e.g. `Date.now`.
+* `defaultValue`: use defaultValue on create() when attribute is not found, default to `undefined`. NOTE `undefined` is not `null`, and you can set defaultValue to `null`. You can also set defaultValue to a function to evaluate the defaultValue in the runtime, e.g. `Date.now`.
 
 You can customize the Model by `options`. Those are useful options:
 
 * `table`: table name, default to model name;
 
-* `beforeCreate`: a function to allow you to do some modifications on an instance before saved;
+* `beforeCreate`: a function to allow you to do some modifications on an instance before created;
 
 * `beforeUpdate`: a function to allow you to do some modifications on an instance before updated;
 
@@ -218,36 +218,36 @@ Copy the generated SQL to mysql client and execute it.
 
 Please note if you change your model you may have to make a schema change (using `alter table ...`) by yourself.
 
-## Save data
+## Create object
 
-To save data you have to build an instance from model by `build()` and `save()` methods:
+To create data in db you have to build an instance from model by `build()` and `create()` methods:
 
     var user = User.build({
         name: 'Michael',
         score: 100
     });
-    user.save(function(err, entity) {
+    user.create(function(err, entity) {
         // entity is the same as variable user, but some attributes are automatically set:
         // entity.id, entity.status
     });
 
 Or you can combile 2 steps into 1 step:
 
-    User.save({
+    User.create({
         name: 'Michael',
         score: 100
     }), function(err, entity) {
         // entity is an instance of User model.
     });
 
-Invoke `save()` on an instance will return itself:
+Invoke `create()` on an instance will return itself:
 
     var user = User.build({name: 'Michael'});
-    user===user.save(function(err, entity){}); // true
+    user===user.create(function(err, entity){}); // true
 
-Invoke `save()` on a model will return `undefined`:
+Invoke `create()` on a model will return `undefined`:
 
-    undefined===User.save({name: 'Michael'}, function(err, entity){}); // true
+    undefined===User.create({name: 'Michael'}, function(err, entity){}); // true
 
 ## Retrieve data
 
