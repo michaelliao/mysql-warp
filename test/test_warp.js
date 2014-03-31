@@ -481,6 +481,32 @@ describe('#warp', function() {
             });
         });
 
+        it('#test update as k-v', function(done) {
+            Setting.build({
+                id: 'kv-123',
+                active: true,
+                key: 'can update kv?',
+                value: 'yes'
+            }).create(function(err, result) {
+                should(err).not.be.ok;
+                // update:
+                result.update({
+                    active: false,
+                    key: 'kv can update',
+                    value: 'YES!'
+                }, function(err, entity) {
+                    should(err).not.be.ok;
+                    // query to check:
+                    Setting.find('kv-123', function(err, r) {
+                        should(r.active===false).be.ok;
+                        r.key.should.equal('kv can update');
+                        r.value.should.equal('YES!');
+                        done();
+                    });
+                });
+            });
+        });
+
     });
 
 });

@@ -411,19 +411,32 @@ function BaseModel(warpObject) {
             array = undefined;
             tx = undefined;
         }
-        else if (arguments.length===2) {
-            if (Array.isArray(array)) {
-                if (array.length===0) {
-                    throw new Error('Empty attributes to update.');
-                }
-                callback = tx;
-                tx = undefined;
-            }
-            else {
+        if (arguments.length===2) {
+            if (array.__isTx) {
                 callback = tx;
                 tx = array;
                 array = undefined;
             }
+            else {
+                callback = tx;
+                tx = undefined;
+            }
+        }
+        if (! Array.isArray(array) && typeof(array)==='object') {
+            // can update { key: value }
+            var that = this;
+            var thatModel = this.__model;
+            var updates = [];
+            _.each(array, function(v, k) {
+                if (k in thatModel.__attributes) {
+                    that[k] = v;
+                    updates.push(k);
+                }
+            });
+            array = updates;
+        }
+        if (array!==undefined && array.length===0) {
+            throw new Error('Update attributes array is empty.');
         }
         update(this, array, tx, callback);
     }
