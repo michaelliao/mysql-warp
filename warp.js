@@ -526,10 +526,10 @@ function Warp(pool) {
     this.__model = new BaseModel(this);
 
     var Instance = function(subModel, attrs) {
-        console.log('Create instance of ' + subModel + '...');
         this.__isModel = false;
         this.__model = subModel;
         this.__objectId = utils.createObjectId();
+        console.log('Create instance [' + this.__objectId + '] of ' + subModel + '...');
 
         var that = this;
 
@@ -543,7 +543,6 @@ function Warp(pool) {
                 }
             }
         });
-        console.log('Create instance of ' + this.__model + ' done.');
     };
     Instance.prototype = this.__model;
     Instance.prototype.constructor = Instance;
@@ -624,10 +623,14 @@ Warp.prototype.transaction = function(callback) {
                             log(conn, 'TRANSACTION', 'rollback transaction...');
                             return conn.rollback(function() {
                                 log(conn, 'TRANSACTION', 'transaction rollbacked.');
+                                conn.release();
+                                log(conn, 'CONNECTION', 'released to pool.');
                                 fn(err);
                             });
                         }
                         log(conn, 'TRANSACTION', 'transaction committed.');
+                        conn.release();
+                        log(conn, 'CONNECTION', 'released to pool.');
                         fn(null);
                     });
                 }
