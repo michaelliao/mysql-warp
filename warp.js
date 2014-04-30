@@ -601,6 +601,8 @@ Warp.prototype.transaction = function(callback) {
         conn.beginTransaction(function(err) {
             if (err) {
                 log(conn, 'TRANSACTION', 'failed start transaction.');
+                conn.release();
+                log(conn, 'CONNECTION', 'released to pool.');
                 return callback(err);
             }
             log(conn, 'TRANSACTION', 'transaction began.');
@@ -611,22 +613,26 @@ Warp.prototype.transaction = function(callback) {
                 done: function(err, fn) {
                     if (err) {
                         log(conn, 'TRANSACTION', 'rollback transaction...');
-                        return conn.rollback(function() {
+                        conn.rollback(function() {
                             log(conn, 'TRANSACTION', 'transaction rollbacked.');
+                            conn.release();
+                            log(conn, 'CONNECTION', 'released to pool.');
                             return fn(err);
                         });
+                        return;
                     }
                     log(conn, 'TRANSACTION', 'commit transaction...');
                     conn.commit(function(err) {
                         if (err) {
                             log(conn, 'TRANSACTION', 'commit failed: ' + err.message);
                             log(conn, 'TRANSACTION', 'rollback transaction...');
-                            return conn.rollback(function() {
+                            conn.rollback(function() {
                                 log(conn, 'TRANSACTION', 'transaction rollbacked.');
                                 conn.release();
                                 log(conn, 'CONNECTION', 'released to pool.');
                                 fn(err);
                             });
+                            return;
                         }
                         log(conn, 'TRANSACTION', 'transaction committed.');
                         conn.release();
