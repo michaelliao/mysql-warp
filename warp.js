@@ -9,7 +9,7 @@ var utils = require('./utils');
 
 // set object ID to connection if no __objectId exist:
 function setConnectionObjectId(conn) {
-    if (conn.__objectId===undefined) {
+    if (conn.__objectId === undefined) {
         conn.__objectId = utils.createObjectId();
     }
 }
@@ -17,26 +17,27 @@ function setConnectionObjectId(conn) {
 // log connection message:
 function log(conn, name, message) {
     function padding(n, len) {
-        var s = n.toString();
-        var p = len - s.length;
+        var
+            s = n.toString(),
+            p = len - s.length;
         while (p > 0) {
             s = '0' + s;
-            p --;
+            p--;
         }
         return s;
     }
-    var d = new Date();
     var
+        d = new Date(),
         h = d.getHours(),
         m = d.getMinutes(),
         s = d.getSeconds(),
-        ms = d.getMilliseconds();
-    var date = padding(h, 2) + ':' + padding(m, 2) + ':' + padding(s, 2) + '.' + padding(ms, 3);
+        ms = d.getMilliseconds(),
+        date = padding(h, 2) + ':' + padding(m, 2) + ':' + padding(s, 2) + '.' + padding(ms, 3);
     console.log(date + (conn ? (' [Warp@' + conn.__objectId + '] ') : ' ') + name + ': ' + message);
 }
 
 function executeSQL(conn, sql, params, callback) {
-    var query = conn.query(sql, params, function(err, result) {
+    var query = conn.query(sql, params, function (err, result) {
         return callback(err, result);
     });
     log(conn, 'SQL', query.sql);
@@ -48,20 +49,20 @@ function smartRunSQL(pool, sql, params, tx, callback) {
         // run in transaction:
         return executeSQL(tx.connection, sql, params, callback);
     }
-    pool.getConnection(function(err, conn) {
+    pool.getConnection(function (err, conn) {
         if (err) {
             log('?', 'CONNECTION', 'get connection failed.');
             return callback(err);
         }
         setConnectionObjectId(conn);
         log(conn, 'CONNECTION', 'opened from pool.');
-        executeSQL(conn, sql, params, function(err, result) {
+        executeSQL(conn, sql, params, function (err, result) {
             conn.release();
             log(conn, 'CONNECTION', 'released to pool.');
             callback(err, result);
         });
     });
-};
+}
 
 /*
 {
@@ -74,32 +75,36 @@ function smartRunSQL(pool, sql, params, tx, callback) {
 }
 */
 function parseFindOptions(model, options, expectSingleResult) {
-    var select = options.select ?
-        (Array.isArray(options.select)
-            ? _.map(options.select, function(f) {
+    var select, where, params, append, limit, offset;
+    if (options.select) {
+        if (Array.isArray(options.select)) {
+            select = _.map(options.select, function (f) {
                 return '`' + f + '`';
-            }).join(', ')
-            : options.select)
-            : model.__selectAttributesNames;
+            }).join(', ');
+        } else {
+            select = options.select;
+        }
+    } else {
+        select = model.__selectAttributesNames;
+    }
 
-    var where = options.where || '';
-    var params = options.params || [];
-    var append = '';
+    where = options.where || '';
+    params = options.params || [];
+    append = '';
 
     if (options.order) {
         append = append + ' order by ' + options.order;
     }
-    var limit = options.limit;
-    var offset = options.offset;
+    limit = options.limit;
+    offset = options.offset;
 
-    if (limit===undefined && expectSingleResult) {
+    if (limit === undefined && expectSingleResult) {
         limit = 2;
     }
 
     if (limit && offset) {
         append = append + ' limit ' + offset + ',' + limit;
-    }
-    else {
+    } else {
         if (limit) {
             append = append + ' limit ' + limit;
         }
@@ -116,54 +121,54 @@ function parseFindOptions(model, options, expectSingleResult) {
 }
 
 function findNumber(model, options, tx, callback) {
-    if (typeof(options.select)!=='string') {
+    if (typeof (options.select) !== 'string') {
         return callback(new Error('You need specify select as string like \'count(*)\'.'));
     }
-    var parsed = parseFindOptions(model, options, false);
     var
+        parsed = parseFindOptions(model, options, false),
         select = parsed.select,
         where = parsed.where,
         append = parsed.append,
-        params = parsed.params;
-    var sql = where ?
-        utils.format('select %s from `%s` where %s %s', select, model.__table, where, append) :
-        utils.format('select %s from `%s` %s', select, model.__table, append);
-    smartRunSQL(model.__pool, sql, params, tx, function(err, results) {
+        params = parsed.params,
+        sql = where ?
+                utils.format('select %s from `%s` where %s %s', select, model.__table, where, append) :
+                utils.format('select %s from `%s` %s', select, model.__table, append);
+    smartRunSQL(model.__pool, sql, params, tx, function (err, results) {
         if (err) {
             return callback(err);
         }
-        if (! Array.isArray(results)) {
+        if (!Array.isArray(results)) {
             return callback(new Error('No record returned.'));
         }
-        if (results.length===0) {
+        if (results.length === 0) {
             return callback(new Error('Multiple results returned.'));
         }
-        var num, r = results[0];
-        for (var key in r) {
+        var key, num, r = results[0];
+        for (key in r) {
             if (r.hasOwnProperty(key)) {
                 num = r[key];
                 break;
-            };
+            }
         }
         return callback(null, num);
     });
 }
 
 function findAll(model, options, tx, callback) {
-    var parsed = parseFindOptions(model, options, false);
     var
+        parsed = parseFindOptions(model, options, false),
         select = parsed.select,
         where = parsed.where,
         append = parsed.append,
-        params = parsed.params;
-    var sql = where ?
-        utils.format('select %s from `%s` where %s %s', select, model.__table, where, append) :
-        utils.format('select %s from `%s` %s', select, model.__table, append);
-    smartRunSQL(model.__pool, sql, params, tx, function(err, results) {
+        params = parsed.params,
+        sql = where ?
+                utils.format('select %s from `%s` where %s %s', select, model.__table, where, append) :
+                utils.format('select %s from `%s` %s', select, model.__table, append);
+    smartRunSQL(model.__pool, sql, params, tx, function (err, results) {
         if (err) {
             return callback(err);
         }
-        return callback(null, _.map(results, function(r) {
+        return callback(null, _.map(results, function (r) {
             return model.__warp.__createInstance(model, r);
         }));
     });
@@ -171,32 +176,37 @@ function findAll(model, options, tx, callback) {
 
 // find one and only one results by id or options:
 function find(model, id, tx, callback) {
-    var select, where, append, params;
-    var complexFind = typeof(id)==='object';
+    var
+        sql,
+        select,
+        where,
+        append,
+        params,
+        parsed,
+        complexFind = typeof id === 'object';
     if (complexFind) {
-        var parsed = parseFindOptions(model, id, true);
+        parsed = parseFindOptions(model, id, true);
 
         select = parsed.select;
         where = parsed.where;
         append = parsed.append;
         params = parsed.params;
-    }
-    else {
+    } else {
         // by primary key:
         select = model.__selectAttributesNames;
         where = '`' + model.__primaryKey + '`=?';
         append = '';
         params = [id];
     }
-    var sql = utils.format('select %s from `%s` where %s %s', select, model.__table, where, append);
-    smartRunSQL(model.__pool, sql, params, tx, function(err, results) {
+    sql = utils.format('select %s from `%s` where %s %s', select, model.__table, where, append);
+    smartRunSQL(model.__pool, sql, params, tx, function (err, results) {
         if (err) {
             return callback(err);
         }
         if (results.length > 1) {
             return callback(new Error('Multiple results found.'));
         }
-        return callback(null, results.length===0 ? null : model.__warp.__createInstance(model, results[0]));
+        return callback(null, results.length === 0 ? null : model.__warp.__createInstance(model, results[0]));
     });
 }
 
@@ -204,24 +214,29 @@ function find(model, id, tx, callback) {
 function create(instance, tx, callback) {
     var
         model = instance.__model,
-        beforeCreate = model.__beforeCreate;
-    beforeCreate && beforeCreate(instance);
+        beforeCreate = model.__beforeCreate,
+        params,
+        value,
+        sql;
+    if (beforeCreate) {
+        beforeCreate(instance);
+    }
     // insert into TABLE () values (???)
-    var params = _.map(model.__insertAttributesArray, function(attr) {
+    params = _.map(model.__insertAttributesArray, function (attr) {
         if (instance.hasOwnProperty(attr)) {
             return instance[attr];
         }
         var def = model.__attributes[attr];
-        if (def.defaultValue!==undefined) {
-            var value = def.defaultValueIsFunction ? def.defaultValue() : def.defaultValue;
+        if (def.defaultValue !== undefined) {
+            value = def.defaultValueIsFunction ? def.defaultValue() : def.defaultValue;
             instance[attr] = value;
             return value;
         }
         instance[attr] = null;
         return null;
     });
-    var sql = utils.format('insert into `%s` (%s) values(%s)', model.__table, model.__insertAttributesNames, utils.createPlaceholders(model.__insertAttributesArray.length));
-    smartRunSQL(model.__pool, sql, params, tx, function(err, result) {
+    sql = utils.format('insert into `%s` (%s) values(%s)', model.__table, model.__insertAttributesNames, utils.createPlaceholders(model.__insertAttributesArray.length));
+    smartRunSQL(model.__pool, sql, params, tx, function (err, result) {
         if (err) {
             return callback(err);
         }
@@ -236,22 +251,25 @@ function create(instance, tx, callback) {
 function update(instance, array, tx, callback) {
     var
         model = instance.__model,
-        beforeUpdate = model.__beforeUpdate;
-    beforeUpdate && beforeUpdate(instance);
-
-    var updates, params;
-    if (! array) {
+        beforeUpdate = model.__beforeUpdate,
+        updates,
+        params,
+        sql;
+    if (beforeUpdate) {
+        beforeUpdate(instance);
+    }
+    if (!array) {
         array = model.__updateAttributesArray;
     }
-    updates = _.map(array, function(attr) {
+    updates = _.map(array, function (attr) {
         return '`' + attr + '`=?';
     });
-    params = _.map(array, function(attr) {
+    params = _.map(array, function (attr) {
         return instance[attr];
     });
     params.push(instance[model.__primaryKey]);
-    var sql = utils.format('update `%s` set %s where `%s`=?', model.__table, updates.join(', '), model.__primaryKey);
-    smartRunSQL(model.__pool, sql, params, tx, function(err, result) {
+    sql = utils.format('update `%s` set %s where `%s`=?', model.__table, updates.join(', '), model.__primaryKey);
+    smartRunSQL(model.__pool, sql, params, tx, function (err, result) {
         if (err) {
             return callback(err);
         }
@@ -261,10 +279,11 @@ function update(instance, array, tx, callback) {
 
 // delete an instance by id:
 function destroy(instance, tx, callback) {
-    var model = instance.__model;
-    var sql = utils.format('delete from `%s` where `%s`=?', model.__table, model.__primaryKey);
-    var params = [instance[model.__primaryKey]];
-    smartRunSQL(model.__pool, sql, params, tx, function(err, result) {
+    var
+        model = instance.__model,
+        sql = utils.format('delete from `%s` where `%s`=?', model.__table, model.__primaryKey),
+        params = [instance[model.__primaryKey]];
+    smartRunSQL(model.__pool, sql, params, tx, function (err, result) {
         if (err) {
             return callback(err);
         }
@@ -274,11 +293,12 @@ function destroy(instance, tx, callback) {
 
 // generate DDL:
 function ddl(table, attributes) {
-    var sql = 'create table `' + table + '` (\n';
-    var pk = null;
-    var uniques = [];
-    var indics = [];
-    _.each(attributes, function(attr, name) {
+    var
+        sql = 'create table `' + table + '` (\n',
+        pk = null,
+        uniques = [],
+        indics = [];
+    _.each(attributes, function (attr, name) {
         var col = '  `' + name + '` ' + (attr.type || 'varchar(255)');
         col = col + (attr.allowNull ? ' null' : ' not null');
         if (attr.primaryKey) {
@@ -286,18 +306,21 @@ function ddl(table, attributes) {
             if (attr.autoIncrement) {
                 col = col + ' auto_increment';
             }
-        }
-        else {
-            attr.unique && uniques.push(name);
-            (attr.index && ! attr.unique) && indics.push(name);
+        } else {
+            if (attr.unique) {
+                uniques.push(name);
+            }
+            if (attr.index && !attr.unique) {
+                indics.push(name);
+            }
         }
         col = col + ',\n';
         sql = sql + col;
     });
-    _.each(indics, function(idx) {
+    _.each(indics, function (idx) {
         sql = sql + '  key `idx_' + idx + '` (`' + idx + '`),\n';
     });
-    _.each(uniques, function(idx) {
+    _.each(uniques, function (idx) {
         sql = sql + '  unique key `idx_' + idx + '` (`' + idx + '`),\n';
     });
     sql = sql + '  primary key (`' + pk + '`)\n';
@@ -310,34 +333,34 @@ function BaseModel(warpObject) {
     this.__name = '__BaseModel__';
     this.__warp = warpObject;
     this.__pool = warpObject.__pool;
-    this.ddl = function() {
-        if (! this.__isModel) {
-            return callback(new Error('Cannot invoke find() on instance: ' + this));
+    this.ddl = function () {
+        if (!this.__isModel) {
+            throw new Error('Cannot invoke ddl() on instance: ' + this);
         }
-        if (this.__name==='__BaseModel__') {
-            return callback(new Error('Cannot invoke find() on BaseModel: ' + this));
+        if (this.__name === '__BaseModel__') {
+            throw new Error('Cannot invoke ddl() on BaseModel: ' + this);
         }
         return ddl(this.__table, this.__attributes);
-    }
-    this.find = function(id, tx, callback) {
-        if (! this.__isModel) {
+    };
+    this.find = function (id, tx, callback) {
+        if (!this.__isModel) {
             return callback(new Error('Cannot invoke find() on instance: ' + this));
         }
-        if (arguments.length===2) {
+        if (arguments.length === 2) {
             callback = tx;
             tx = undefined;
         }
         find(this, id, tx, callback);
     };
-    this.findNumber = function(options, tx, callback) {
-        if (! this.__isModel) {
+    this.findNumber = function (options, tx, callback) {
+        if (!this.__isModel) {
             return callback(new Error('Cannot invoke findAll() on instance: ' + this));
         }
-        if (arguments.length===2) {
+        if (arguments.length === 2) {
             callback = tx;
             tx = undefined;
         }
-        if (typeof(options)==='string') {
+        if (typeof options === 'string') {
             var select = options;
             options = {
                 select: select
@@ -345,56 +368,54 @@ function BaseModel(warpObject) {
         }
         findNumber(this, options, tx, callback);
     };
-    this.findAll = function(options, tx, callback) {
-        if (! this.__isModel) {
+    this.findAll = function (options, tx, callback) {
+        if (!this.__isModel) {
             return callback(new Error('Cannot invoke findAll() on instance: ' + this));
         }
-        if (arguments.length===2) {
+        if (arguments.length === 2) {
             callback = tx;
             tx = undefined;
         }
-        if (arguments.length===1) {
+        if (arguments.length === 1) {
             callback = options;
             options = {};
             tx = undefined;
         }
         findAll(this, options, tx, callback);
     };
-    this.create = function(arg1, arg2, arg3) {
+    this.create = function (arg1, arg2, arg3) {
         // args: data, tx, callback:
         var data, tx, callback;
-        if (arguments.length===1) {
+        if (arguments.length === 1) {
             // instance.create(callback):
+            callback = arg1;
             if (this.__isModel) {
                 return callback(new Error('Missing data when invoke create() on model: ' + this));
             }
-            callback = arg1;
             create(this, undefined, callback);
             return this; // return instance itself
         }
-        if (arguments.length===2) {
+        if (arguments.length === 2) {
             if (arg1.__isTx) {
                 // instance.create(tx, callback):
+                tx = arg1;
+                callback = arg2;
                 if (this.__isModel) {
                     return callback(new Error('Missing data when invoke create() on model: ' + this));
                 }
-                tx = arg1;
-                callback = arg2;
                 create(this, tx, callback);
                 return this; // return instance itself
             }
-            else {
-                // Model.create(data, callback):
-                if (! this.__isModel) {
-                    return callback(new Error('Cannot invoke create() on instance with data: ' + this));
-                }
-                data = arg1;
-                callback = arg2;
-                return create(this.build(data), undefined, callback);
+            // Model.create(data, callback):
+            data = arg1;
+            callback = arg2;
+            if (!this.__isModel) {
+                return callback(new Error('Cannot invoke create() on instance with data: ' + this));
             }
+            return create(this.build(data), undefined, callback);
         }
         // Model(data, tx, callback):
-        if (! this.__isModel) {
+        if (!this.__isModel) {
             return callback(new Error('Cannot invoke create() on instance with data: ' + this));
         }
         data = arg1;
@@ -402,73 +423,73 @@ function BaseModel(warpObject) {
         callback = arg3;
         return create(this.build(data), tx, callback);
     };
-    this.update = function(array, tx, callback) {
+    this.update = function (array, tx, callback) {
         if (this.__isModel) {
             return callback(new Error('Cannot invoke update() on model: ' + this));
         }
-        if (arguments.length===1) {
+        if (arguments.length === 1) {
             callback = array;
             array = undefined;
             tx = undefined;
         }
-        if (arguments.length===2) {
+        if (arguments.length === 2) {
             if (array.__isTx) {
                 callback = tx;
                 tx = array;
                 array = undefined;
-            }
-            else {
+            } else {
                 callback = tx;
                 tx = undefined;
             }
         }
-        if (! Array.isArray(array) && typeof(array)==='object') {
+        if (!Array.isArray(array) && typeof array === 'object') {
             // can update { key: value }
-            var that = this;
-            var thatModel = this.__model;
-            var updates = [];
-            _.each(array, function(v, k) {
-                if (k in thatModel.__attributes) {
+            var
+                that = this,
+                thatModel = this.__model,
+                updates = [];
+            _.each(array, function (v, k) {
+                if (thatModel.__attributes.hasOwnProperty(k)) {
                     that[k] = v;
                     updates.push(k);
                 }
             });
             array = updates;
         }
-        if (array!==undefined && array.length===0) {
+        if (array !== undefined && array.length === 0) {
             return callback(new Error('Update attributes array is empty.'));
         }
         update(this, array, tx, callback);
-    }
-    this.destroy = function(tx, callback) {
+    };
+    this.destroy = function (tx, callback) {
         if (this.__isModel) {
             return callback(new Error('Cannot invoke destroy() on model: ' + this));
         }
-        if (arguments.length===1) {
+        if (arguments.length === 1) {
             callback = tx;
             tx = undefined;
         }
         destroy(this, tx, callback);
-    }
-    this.build = function(attrs) {
-        if (this.__name==='__BaseModel__') {
-            return callback(new Error('Cannot build instance on BaseModel.'));
+    };
+    this.build = function (attrs) {
+        if (this.__name === '__BaseModel__') {
+            throw new Error('Cannot build instance on BaseModel.');
         }
-        if (! this.__isModel) {
-            return callback(new Error('Cannot build instance on instance.'));
+        if (!this.__isModel) {
+            throw new Error('Cannot build instance on instance.');
         }
         return this.__warp.__createInstance(this, attrs);
     };
-    this.toJSON = function() {
+    this.toJSON = function () {
         var j = {};
-        _.forOwn(this, function(v, k) {
-            if (k.indexOf('__')!==0) {
+        _.forOwn(this, function (v, k) {
+            if (k.indexOf('__') !== 0) {
                 j[k] = v;
             }
         });
         return j;
     };
-    this.toString = function() {
+    this.toString = function () {
         if (this.__isModel) {
             return '[Model(' + this.__name + ') @ ' + this.__objectId + ' with Pool@' + warpObject.__objectId + ']';
         }
@@ -477,7 +498,7 @@ function BaseModel(warpObject) {
 }
 
 function createSubModel(baseModel, definitions) {
-    var Sub = function() {
+    var Sub = function () {
         this.__isModel = true;
         this.__objectId = utils.createObjectId();
 
@@ -501,7 +522,7 @@ function createSubModel(baseModel, definitions) {
 
         this.__booleanKeys = definitions.booleanKeys;
 
-        this.__inspect = function() {
+        this.__inspect = function () {
             console.log('Model: ' + this.__name);
             console.log('Table: ' + this.__table);
             console.log('Attributes: ' + JSON.stringify(this.__attributes, undefined, '  '));
@@ -525,7 +546,7 @@ function Warp(pool) {
     // prepare prototype for sub models:
     this.__model = new BaseModel(this);
 
-    var Instance = function(subModel, attrs) {
+    var Instance = function (subModel, attrs) {
         this.__isModel = false;
         this.__model = subModel;
         this.__objectId = utils.createObjectId();
@@ -533,12 +554,11 @@ function Warp(pool) {
 
         var that = this;
 
-        _.each(attrs, function(v, k) {
-            if (k.indexOf('__')!==0) {
-                if (v!==null && subModel.__booleanKeys[k]) {
-                    that[k] = v ? true: false;
-                }
-                else {
+        _.each(attrs, function (v, k) {
+            if (k.indexOf('__') !== 0) {
+                if (v !== null && subModel.__booleanKeys[k]) {
+                    that[k] = v ? true : false;
+                } else {
                     that[k] = v;
                 }
             }
@@ -547,25 +567,28 @@ function Warp(pool) {
     Instance.prototype = this.__model;
     Instance.prototype.constructor = Instance;
 
-    this.__createInstance = function(subModel, attrs) {
+    this.__createInstance = function (subModel, attrs) {
         return new Instance(subModel, attrs);
     };
 
-    this.define = function(name, fieldConfigs, options) {
-        var def = utils.parseModelDefinition(name, fieldConfigs, options);
-        var subModel = createSubModel(this.__model, def);
+    this.define = function (name, fieldConfigs, options) {
+        var
+            def = utils.parseModelDefinition(name, fieldConfigs, options),
+            subModel = createSubModel(this.__model, def);
         subModel.prototype = this.__model;
         console.log('Model defined: ' + subModel);
         return subModel;
     };
 
-    this.destroy = function() {
+    this.destroy = function () {
         console.log('[Pool@' + this.__objectId + '] Connection pool destroyed.');
-        this.__pool && this.__pool.end();
+        if (this.__pool) {
+            this.__pool.end();
+        }
         delete this.__pool;
     };
 
-    this.toString = function() {
+    this.toString = function () {
         return '[Warp Object with Pool@' + this.__objectId + ']';
     };
 
@@ -573,32 +596,32 @@ function Warp(pool) {
 }
 
 /**
-    warp.transaction(function(err, tx) {
+    warp.transaction(function (err, tx) {
         if (err) {
             // transaction starts failed!
             return 'ERR START TX';
         }
         async.waterfall([
-            function(callback) {
+            function (callback) {
                 warp.query('select * from user', tx, callback);
             }
-        ], function(err, result) {
-            tx.done(err, function(err) {
+        ], function (err, result) {
+            tx.done(err, function (err) {
                 return err ? 'TX ROLLBACKED' : 'TX COMMITTED';
             });
         });
     });
 **/
 
-Warp.prototype.transaction = function(callback) {
-    this.__pool.getConnection(function(err, conn) {
+Warp.prototype.transaction = function (callback) {
+    this.__pool.getConnection(function (err, conn) {
         if (err) {
             log(null, 'CONNECTION', 'failed get connection when start transaction.');
             return callback(err);
         }
         setConnectionObjectId(conn);
         log(conn, 'TRANSACTION', 'start transaction...');
-        conn.beginTransaction(function(err) {
+        conn.beginTransaction(function (err) {
             if (err) {
                 log(conn, 'TRANSACTION', 'failed start transaction.');
                 return callback(err);
@@ -608,20 +631,20 @@ Warp.prototype.transaction = function(callback) {
             callback(null, {
                 connection: conn,
                 __isTx: true,
-                done: function(err, fn) {
+                done: function (err, fn) {
                     if (err) {
                         log(conn, 'TRANSACTION', 'rollback transaction...');
-                        return conn.rollback(function() {
+                        return conn.rollback(function () {
                             log(conn, 'TRANSACTION', 'transaction rollbacked.');
                             return fn(err);
                         });
                     }
                     log(conn, 'TRANSACTION', 'commit transaction...');
-                    conn.commit(function(err) {
+                    conn.commit(function (err) {
                         if (err) {
                             log(conn, 'TRANSACTION', 'commit failed: ' + err.message);
                             log(conn, 'TRANSACTION', 'rollback transaction...');
-                            return conn.rollback(function() {
+                            return conn.rollback(function () {
                                 log(conn, 'TRANSACTION', 'transaction rollbacked.');
                                 conn.release();
                                 log(conn, 'CONNECTION', 'released to pool.');
@@ -635,25 +658,25 @@ Warp.prototype.transaction = function(callback) {
                     });
                 }
             });
-        })
+        });
     });
 };
 
-Warp.prototype.update = function(sql, params, tx, callback) {
-    if (arguments.length===2) {
+Warp.prototype.update = function (sql, params, tx, callback) {
+    if (arguments.length === 2) {
         callback = params;
         tx = undefined;
         params = [];
-    }
-    else if (arguments.length===3) {
-        if (Array.isArray(params)) {
-            callback = tx;
-            tx = undefined;
-        }
-        else {
-            callback = tx;
-            tx = params;
-            params = [];
+    } else {
+        if (arguments.length === 3) {
+            if (Array.isArray(params)) {
+                callback = tx;
+                tx = undefined;
+            } else {
+                callback = tx;
+                tx = params;
+                params = [];
+            }
         }
     }
     return smartRunSQL(this.__pool, sql, params, tx, callback);
@@ -661,32 +684,30 @@ Warp.prototype.update = function(sql, params, tx, callback) {
 
 Warp.prototype.query = Warp.prototype.update;
 
-Warp.prototype.queryNumber = function(sql, params, tx, callback) {
-    if (arguments.length===2) {
+Warp.prototype.queryNumber = function (sql, params, tx, callback) {
+    if (arguments.length === 2) {
         callback = params;
         tx = undefined;
         params = [];
-    }
-    else if (arguments.length===3) {
+    } else if (arguments.length === 3) {
         if (Array.isArray(params)) {
             callback = tx;
             tx = undefined;
-        }
-        else {
+        } else {
             callback = tx;
             tx = params;
             params = [];
         }
     }
-    return smartRunSQL(this.__pool, sql, params, tx, function(err, results) {
+    return smartRunSQL(this.__pool, sql, params, tx, function (err, results) {
         if (err) {
             return callback(err);
         }
-        if (! Array.isArray(results)) {
+        if (!Array.isArray(results)) {
             return callback(new Error('No record returned.'));
         }
-        var num, r = results[0];
-        for (var key in r) {
+        var key, num, r = results[0];
+        for (key in r) {
             if (r.hasOwnProperty(key)) {
                 num = r[key];
                 break;
@@ -694,12 +715,12 @@ Warp.prototype.queryNumber = function(sql, params, tx, callback) {
         }
         return callback(null, num);
     });
-}
+};
 
 var theWarp = {
-    create: function(params) {
-        var checkRequiredParams = function(name) {
-            if ( ! name in params) {
+    create: function (params) {
+        var checkRequiredParams = function (name) {
+            if (!params.hasOwnProperty(name)) {
                 throw {
                     name: 'ParameterError',
                     message: 'no value provided for parameter \'' + name + '\'.'
@@ -709,7 +730,7 @@ var theWarp = {
         checkRequiredParams('user');
         checkRequiredParams('database');
         return new Warp(mysql.createPool(params));
-    },
+    }
 };
 
-exports = module.exports = theWarp;
+module.exports = theWarp;
