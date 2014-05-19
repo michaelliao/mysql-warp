@@ -8,11 +8,12 @@ var
 
 // generate random object ID as 'ffffffff':
 function createObjectId() {
-    var s = Math.floor(Math.random() * 0xffffffff).toString(16);
-    var padding = 8 - s.length;
+    var
+        s = Math.floor(Math.random() * 0xffffffff).toString(16),
+        padding = 8 - s.length;
     while (padding > 0) {
         s = '0' + s;
-        padding --;
+        padding--;
     }
     return s;
 }
@@ -22,7 +23,7 @@ function createPlaceholders(length) {
     if (length > 1) {
         while (length > 1) {
             s = s + ', ?';
-            length --;
+            length--;
         }
     }
     return s;
@@ -32,21 +33,21 @@ function parseColumnDefinition(options) {
     var
         name = options.name,
         type = options.type.toLowerCase(),
-        primaryKey = options.primaryKey ? true: false,
-        autoIncrement = primaryKey && (options.autoIncrement ? true: false),
-        allowNull = options.allowNull ? true: false,
-        index = options.index ? true: false,
-        unique = options.unique ? true: false,
+        primaryKey = options.primaryKey ? true : false,
+        autoIncrement = primaryKey && (options.autoIncrement ? true : false),
+        allowNull = options.allowNull ? true : false,
+        index = options.index ? true : false,
+        unique = options.unique ? true : false,
         defaultValue = options.defaultValue,
-        validate = options.validate;
-    var defaultValueIsFunction = typeof(defaultValue)==='function';
-    if (! name || ! validator.matches(name, /^[a-zA-Z0-9\_]+$/)) {
+        validate = options.validate,
+        defaultValueIsFunction = typeof defaultValue === 'function';
+    if (!name || !validator.matches(name, /^[a-zA-Z0-9\_]+$/)) {
         throw new Error('name is invalid: ' + name);
     }
     return {
         name: name,
         type: type,
-        booleanType: type==='bool' || type==='boolean',
+        booleanType: type === 'bool' || type === 'boolean',
         primaryKey: primaryKey,
         autoIncrement: autoIncrement,
         allowNull: allowNull,
@@ -59,48 +60,49 @@ function parseColumnDefinition(options) {
 }
 
 function parseModelDefinition(name, fieldConfigs, options) {
-    if (! name) {
+    if (!name) {
         throw new Error('Name is invalid: ' + name);
     }
-    var columns = _.map(fieldConfigs, function(options) {
+    var columns, attributes, primaryKeys, primaryKey, fetchInsertId, selectAttributesArray, updateAttributesArray, insertAttributesArray, booleanKeys;
+    columns = _.map(fieldConfigs, function (options) {
         return parseColumnDefinition(options);
     });
-    var attributes = {};
-    _.each(columns, function(col) {
+    attributes = {};
+    _.each(columns, function (col) {
         attributes[col.name] = col;
     });
-    var primaryKeys = _.filter(columns, function(c) {
+    primaryKeys = _.filter(columns, function (c) {
         return c.primaryKey;
     });
-    if (primaryKeys.length===0) {
+    if (primaryKeys.length === 0) {
         throw new Error('Primary key not found in ' + name);
     }
     if (primaryKeys.length > 1) {
         throw new Error('More than 1 primary keys are found in ' + name);
     }
-    var primaryKey = primaryKeys[0].name;
-    var fetchInsertId = primaryKeys[0].autoIncrement;
+    primaryKey = primaryKeys[0].name;
+    fetchInsertId = primaryKeys[0].autoIncrement;
 
-    var selectAttributesArray = _.map(columns, function(c) {
+    selectAttributesArray = _.map(columns, function (c) {
         return c.name;
     });
-    var updateAttributesArray = _.map(_.filter(columns, function(c) {
-        return ! c.primaryKey;
-    }), function(c) {
+    updateAttributesArray = _.map(_.filter(columns, function (c) {
+        return !c.primaryKey;
+    }), function (c) {
         return c.name;
     });
-    var insertAttributesArray = _.map(_.filter(columns, function(c) {
-        return ! c.autoIncrement;
-    }), function(c) {
+    insertAttributesArray = _.map(_.filter(columns, function (c) {
+        return !c.autoIncrement;
+    }), function (c) {
         return c.name;
     });
-    var booleanKeys = {};
-    _.each(columns, function(c) {
+    booleanKeys = {};
+    _.each(columns, function (c) {
         booleanKeys[c.name] = c.booleanType;
     });
     return {
         name: name,
-        table: options && options.table || name,
+        table: (options && options.table) || name,
         primaryKey: primaryKey,
         booleanKeys: booleanKeys,
         fetchInsertId: fetchInsertId,
@@ -108,42 +110,18 @@ function parseModelDefinition(name, fieldConfigs, options) {
         selectAttributesArray: selectAttributesArray,
         insertAttributesArray: insertAttributesArray,
         updateAttributesArray: updateAttributesArray,
-        selectAttributesNames: _.map(selectAttributesArray, function(name) {
+        selectAttributesNames: _.map(selectAttributesArray, function (name) {
             return '`' + name + '`';
         }).join(', '),
-        insertAttributesNames: _.map(insertAttributesArray, function(name) {
+        insertAttributesNames: _.map(insertAttributesArray, function (name) {
             return '`' + name + '`';
         }).join(', '),
         beforeCreate: options.beforeCreate || null,
-        beforeUpdate: options.beforeUpdate || null,
+        beforeUpdate: options.beforeUpdate || null
     };
 }
 
-/* parse find options like:
-{
-    select: ['id', 'email', 'password']
-    where: {
-        'title': 123,
-        'age > ?': 456,
-    }
-    params: ['Heading', 21],
-}
-*/
-function parseFindOptions(id) {
-    var select, where, params;
-    if (typeof(id)==='object') {
-        //
-    }
-    else {
-        where = '`' + this.primaryKeyField + '` = ?';
-        params = [id];
-    }
-            var sql = util.format('select %s from `%s` where %s', select, this.table, where);
-            console.log('execute SQL: ' + sql);
-            console.log('SQL params: ' + JSON.stringify(params));
-}
-
-exports = module.exports = {
+module.exports = {
 
     createObjectId: createObjectId,
 
@@ -155,5 +133,5 @@ exports = module.exports = {
 
     format: util.format,
 
-    log: console.log,
+    log: console.log
 };
