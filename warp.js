@@ -14,8 +14,13 @@ function setConnectionObjectId(conn) {
     }
 }
 
+var show_sql = false;
+
 // log connection message:
 function log(conn, name, message) {
+    if (! show_sql) {
+        return;
+    }
     function padding(n, len) {
         var
             s = n.toString(),
@@ -733,6 +738,9 @@ var theWarp = {
                 };
             }
         };
+        if ('show_sql' in params) {
+            show_sql = params['show_sql'];
+        }
         checkRequiredParams('user');
         checkRequiredParams('database');
         return new Warp(mysql.createPool(params));

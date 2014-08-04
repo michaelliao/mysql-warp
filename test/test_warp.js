@@ -12,7 +12,8 @@ var warp = Warp.create({
     host: 'localhost',
     user: 'www',
     password: 'www',
-    database: 'warp'
+    database: 'warp',
+    show_sql: true
 });
 
 var User = warp.define('User', [

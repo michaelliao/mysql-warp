@@ -1,7 +1,7 @@
 {
     "name": "mysql-warp",
     "main": "warp.js",
-    "version": "0.2.4",
+    "version": "0.2.5",
     "description": "Simple ORM for MySQL on Node.js",
     "author": "Michael Liao <askxuefeng@gmail.com>",
     "contributors": [
@@ -19,7 +19,7 @@
         "url": "https://github.com/michaelliao/mysql-warp/issues"
     },
     "dependencies": {
-        "mysql": "2.1.1",
+        "mysql": "2.*",
         "lodash": "2.4.1",
         "validator": "3.5.0"
     },
