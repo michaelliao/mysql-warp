@@ -14,7 +14,8 @@ function setConnectionObjectId(conn) {
     }
 }
 
-var show_sql = false;
+var poolSize = 0;
+var show_sql = true;
 
 // log connection message:
 function log(conn, name, message) {
@@ -60,10 +61,12 @@ function smartRunSQL(pool, sql, params, tx, callback) {
             return callback(err);
         }
         setConnectionObjectId(conn);
-        log(conn, 'CONNECTION', 'opened from pool.');
+        poolSize ++;
+        log(conn, 'CONNECTION', 'opened from pool: ' + poolSize);
         executeSQL(conn, sql, params, function (err, result) {
             conn.release();
-            log(conn, 'CONNECTION', 'released to pool.');
+            poolSize --;
+            log(conn, 'CONNECTION', 'released to pool: ' + poolSize);
             callback(err, result);
         });
     });
@@ -742,7 +745,14 @@ var theWarp = {
         }
         checkRequiredParams('user');
         checkRequiredParams('database');
-        return new Warp(mysql.createPool(params));
+        var pool = mysql.createPool(params);
+        pool.on('connection', function (connection) {
+            console.log('[pool] new connection created...');
+        });
+        pool.on('enqueue', function () {
+            console.log('[pool] waiting for connection in queue...');
+        });
+        return new Warp(pool);
     }
 };
 
