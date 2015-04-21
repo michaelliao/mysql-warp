@@ -555,7 +555,6 @@ function Warp(pool) {
         this.__isModel = false;
         this.__model = subModel;
         this.__objectId = utils.createObjectId();
-        console.log('Create instance [' + this.__objectId + '] of ' + subModel + '...');
 
         var that = this;
 
@@ -581,7 +580,7 @@ function Warp(pool) {
             def = utils.parseModelDefinition(name, fieldConfigs, options),
             subModel = createSubModel(this.__model, def);
         subModel.prototype = this.__model;
-        console.log('Model defined: ' + subModel);
+        // console.log('Model defined: ' + subModel);
         return subModel;
     };
 
